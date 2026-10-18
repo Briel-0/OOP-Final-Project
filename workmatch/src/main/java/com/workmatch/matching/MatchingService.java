@@ -28,6 +28,7 @@ public class MatchingService {
         public String getLevel() { return level; }
         public Map<String, Double> getPointsPerPart() { return pointsPerPart; }
         public List<String> lacking() { return lacking; }
+        public List<String> getLacking() { return lacking; }
     }
 
     public MatchResult calculateMatch(Applicant applicant, Job job, List<Label> jobLabels, List<Label> applicantLabels) {

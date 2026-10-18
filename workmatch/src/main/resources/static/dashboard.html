@@ -137,6 +137,15 @@
         .btn-close { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; }
         .btn-start-app { background: #6b21a8; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
 
+        /* SEARCH POPUP */
+        .search-modal-card { background: white; width: 640px; max-width: 95%; max-height: 92vh; border-radius: 16px; overflow-y: auto; padding: 28px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .sf-title-input { width: 100%; padding: 14px 16px; border: 1px solid #d8b4fe; border-radius: 10px; font-size: 15px; background: #faf5ff; margin-bottom: 20px; outline: none; }
+        .sf-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .sf-setup-box { display: flex; flex-wrap: wrap; gap: 8px; }
+        .sf-access-box { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .checkbox-card input[type="radio"] { width: 16px; height: 16px; accent-color: #6b21a8; cursor: pointer; }
+        .checkbox-card:has(input[type="radio"]:checked) { background: #f3e8ff; border-color: #d8b4fe; color: #6b21a8; font-weight: 600; }
+
         /* USER MENU DROPDOWN */
         .user-dropdown { display: none; position: absolute; top: 44px; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); width: 160px; padding: 8px 0; z-index: 100; }
         .user-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 13px; color: #4a5568; text-decoration: none; font-weight: 500; cursor: pointer; }
@@ -326,15 +335,12 @@
                     <p>Compare your skills, abilities, preferences, and accessibility requirements with transparent job conditions.</p>
                 </div>
 
-                <div class="search-filter-card">
-                    <div class="search-input-group">
+                <div class="search-filter-card" onclick="openSearchModal()" style="cursor: pointer;">
+                    <div class="search-input-group" style="border-right: none;">
                         <span style="color: #a0aec0;">🔍</span>
-                        <input type="text" id="searchInput" placeholder="Job title, skill, or company" onkeyup="filterJobs()">
+                        <input type="text" id="searchInput" placeholder="Job title, skill, or company" readonly style="cursor: pointer;">
                     </div>
-                    <div class="location-input-group">
-                        <span>📍 Metro Manila</span>
-                    </div>
-                    <button class="btn-search" onclick="filterJobs()">Search jobs</button>
+                    <button type="button" class="btn-search">Search jobs</button>
                 </div>
 
                 <div class="section-header">
@@ -538,6 +544,54 @@
         </main>
     </div>
 
+    <!-- SEARCH POPUP -->
+    <div class="modal-overlay" id="searchModal">
+        <div class="search-modal-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 40px; height: 40px; background: #f3e8ff; color: #6b21a8; border-radius: 10px; display: flex; justify-content: center; align-items: center;">🔍</div>
+                    <div>
+                        <span style="font-size: 11px; font-weight: 700; color: #718096; text-transform: uppercase;">Discover accessible opportunities</span>
+                        <h2 style="font-size: 20px; font-weight: 700; color: #1a202c;">What kind of work are you looking for?</h2>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSearchModal()" style="background: none; border: none; color: #6b21a8; font-weight: 700; font-size: 14px; cursor: pointer;">Close</button>
+            </div>
+
+            <input type="text" id="sfTitle" class="sf-title-input" placeholder="Job title, such as Junior QA Analyst">
+
+            <div class="sf-row">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Company</label>
+                    <input type="text" id="sfCompany" class="form-input" placeholder="Any company">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Skill</label>
+                    <input type="text" id="sfSkill" class="form-input" placeholder="e.g. Documentation or Excel">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Location</label>
+                    <select id="sfLocation" class="form-input"><option value="">Any location</option></select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Work setup (choose one)</label>
+                <div id="sfSetupBox" class="sf-setup-box"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Accessibility support (select all that apply)</label>
+                <div id="sfAccessBox" class="sf-access-box"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-close" onclick="clearSearchForm()">Clear all</button>
+                <button type="button" class="btn-start-app" onclick="applySearchFilters()">Show matching jobs</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL -->
     <div class="modal-overlay" id="jobDetailModal">
         <div class="modal-card">
@@ -551,71 +605,18 @@
                 </div>
                 <div class="modal-match-score">
                     <div class="modal-match-pct" id="modalMatchPct">94%</div>
-                    <div class="modal-match-label">MATCH</div>
+                    <div class="modal-match-label" id="modalMatchLevel">MATCH</div>
                 </div>
             </div>
 
-            <div class="modal-section-title">Why this job matches you</div>
-            <div class="match-list">
-                <div class="match-item">
-                    <div class="match-icon">✓</div>
-                    <div>
-                        <div class="match-item-title">Communication</div>
-                        <div class="match-item-sub">This role aligns with a preference in your profile.</div>
-                    </div>
-                </div>
-                <div class="match-item">
-                    <div class="match-icon">✓</div>
-                    <div>
-                        <div class="match-item-title">Flexible schedule</div>
-                        <div class="match-item-sub">This role aligns with a preference in your profile.</div>
-                    </div>
-                </div>
-                <div class="match-item">
-                    <div class="match-icon">✓</div>
-                    <div>
-                        <div class="match-item-title">Accessible workspace</div>
-                        <div class="match-item-sub">This role aligns with a preference in your profile.</div>
-                    </div>
-                </div>
-            </div>
+            <div class="modal-section-title">Points per part</div>
+            <div class="match-list" id="modalPointsList"></div>
 
             <div class="modal-section-title">Why this isn’t a 100% match yet</div>
             <div class="info-notice">
-                <span>✨ Your <span id="modalNoticePct">94%</span> score compares your profile with the job details. It is guidance—not an eligibility decision.</span>
+                <span>✨ Your <span id="modalNoticePct">0%</span> score compares your profile with the job details. It is guidance, not an eligibility decision.</span>
             </div>
-
-            <div class="gap-item">
-                <div class="gap-icon">+</div>
-                <div>
-                    <div class="match-item-title" style="font-size: 12px;">2 years of relevant experience preferred</div>
-                    <div class="match-item-sub" style="font-size: 11px;">Add relevant experience to your profile if you have it, or apply and discuss transferable skills.</div>
-                </div>
-            </div>
-
-            <div class="gap-item" style="margin-bottom: 20px;">
-                <div class="gap-icon">+</div>
-                <div>
-                    <div class="match-item-title" style="font-size: 12px;">Specialized tool experience is not yet listed in your profile</div>
-                    <div class="match-item-sub" style="font-size: 11px;">Add relevant experience to your profile if you have it, or apply and discuss transferable skills.</div>
-                </div>
-            </div>
-
-            <div class="grid-2-details">
-                <div class="detail-box">
-                    <div class="detail-title">Physical demands</div>
-                    <div class="detail-desc">Primarily seated; movement breaks encouraged</div>
-                </div>
-                <div class="detail-box">
-                    <div class="detail-title">Available accommodation</div>
-                    <div class="detail-desc">Adjustable workstation and assistive software</div>
-                </div>
-            </div>
-
-            <div class="clarify-box">
-                <div class="clarify-title">💬 One detail to clarify</div>
-                <div class="clarify-desc">Ask the employer about interview accommodation options.</div>
-            </div>
+            <div id="modalLackingList" style="margin-bottom: 20px;"></div>
 
             <div class="modal-actions">
                 <button class="btn-close" onclick="closeJobModal()">Close</button>
@@ -628,6 +629,9 @@
         let selectedJob = null;
         let allLabelsData = [];
         let allLocationsData = [];
+        let matchDetails = {};
+        let allJobs = [];
+        let myApplied = [];
 
         function toggleUserDropdown() {
             const menu = document.getElementById('userDropdownMenu');
@@ -857,15 +861,24 @@
         }
 
         function loadData() {
-            fetch('/api/applications')
+            // First get the match details (points and lacking list) for every job
+            fetch('/api/jobs/matches')
+                .then(res => res.ok ? res.json() : [])
+                .then(matches => {
+                    matchDetails = {};
+                    if (Array.isArray(matches)) {
+                        matches.forEach(m => { matchDetails[m.job.id] = m; });
+                    }
+                    return fetch('/api/applications');
+                })
                 .then(res => res.json())
                 .then(apps => {
-                    const appliedList = Array.isArray(apps) ? apps : [];
+                    myApplied = Array.isArray(apps) ? apps : [];
                     const tbody = document.getElementById('applicant-apps-table-body');
                     tbody.innerHTML = '';
 
-                    if (appliedList.length > 0) {
-                        appliedList.forEach(app => {
+                    if (myApplied.length > 0) {
+                        myApplied.forEach(app => {
                             tbody.innerHTML += `
                                 <tr>
                                     <td><strong>${app.jobTitle}</strong></td>
@@ -883,9 +896,9 @@
                         .then(res => res.json())
                         .then(jobs => {
                             const grid = document.getElementById('dynamicJobsGrid');
-                            grid.innerHTML = '';
 
                             if (!Array.isArray(jobs) || jobs.length === 0) {
+                                allJobs = [];
                                 grid.innerHTML = '<p style="color:#718096;">No active job postings in database.</p>';
                                 document.getElementById('jobCountSub').innerText = '0 roles shown';
                                 return;
@@ -893,53 +906,74 @@
 
                             // Highest match first
                             jobs.sort((a, b) => b.matchPct - a.matchPct);
+                            allJobs = jobs;
 
-                            document.getElementById('jobCountSub').innerText = `${jobs.length} roles shown based on database`;
                             document.getElementById('overviewRecTitle').innerText = jobs[0].title;
                             document.getElementById('overviewRecSub').innerText = `${jobs[0].company} • ${jobs[0].location || 'Remote'}`;
 
-                            jobs.forEach((job) => {
-                                const hasApplied = appliedList.some(a => a.jobTitle === job.title && a.company === job.company);
-                                const matchPct = job.matchPct;
-
-                                const actionBtn = hasApplied 
-                                    ? `<button class="btn-applied" disabled>Applied</button>`
-                                    : `<button class="btn-view-match" onclick="openJobModal('${encodeURIComponent(JSON.stringify(job))}', ${matchPct}, false)">View match</button>`;
-
-                                grid.innerHTML += `
-                                    <div class="job-card">
-                                        <div>
-                                            <div class="job-card-top">
-                                                <div class="company-icon">${job.company ? job.company[0] : 'C'}</div>
-                                                <div class="match-badge">${matchPct}% <span>Match</span></div>
-                                            </div>
-                                            <h3 class="job-title">${job.title}</h3>
-                                            <p class="job-co">${job.company}</p>
-                                            <div class="job-meta-row">
-                                                <span>📍 ${job.location || 'Remote'}</span>
-                                            </div>
-                                            <div class="requirements-box">
-                                                <div class="req-item"><span>✓</span> Accessible workspace compatible</div>
-                                            </div>
-                                        </div>
-                                        <div class="job-card-footer">
-                                            ${actionBtn}
-                                        </div>
-                                    </div>
-                                `;
-                            });
+                            // Show the jobs that pass the current search
+                            runSearchFilters();
                         });
                 });
         }
 
         function openJobModal(jobDataEncoded, matchPct, isApplied) {
             selectedJob = JSON.parse(decodeURIComponent(jobDataEncoded));
-            
+            const details = matchDetails[selectedJob.id];
+
             document.getElementById('modalCompanyAvatar').innerText = selectedJob.company ? selectedJob.company[0] : 'C';
             document.getElementById('modalCompanyText').innerText = selectedJob.company;
             document.getElementById('modalJobTitle').innerText = selectedJob.title;
             document.getElementById('modalMatchPct').innerText = `${matchPct}%`;
             document.getElementById('modalNoticePct').innerText = `${matchPct}%`;
+            document.getElementById('modalMatchLevel').innerText = details ? details.level : 'MATCH';
+
+            // Highest points each part can give
+            const maxPoints = {
+                'Skills': 30,
+                'Physical Demands': 15,
+                'Accessibility Needs': 15,
+                'Work Setup': 10,
+                'Education': 10,
+                'Experience': 10,
+                'Location': 10
+            };
+
+            // Points per part
+            const pointsBox = document.getElementById('modalPointsList');
+            pointsBox.innerHTML = '';
+            if (details) {
+                Object.keys(details.pointsPerPart).forEach(part => {
+                    const pts = Math.round(details.pointsPerPart[part] * 100) / 100;
+                    pointsBox.innerHTML += `
+                        <div class="match-item">
+                            <div class="match-icon">✓</div>
+                            <div>
+                                <div class="match-item-title">${part}</div>
+                                <div class="match-item-sub">${pts} out of ${maxPoints[part]} points</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Lacking list (must-have items come first from the server)
+            const lackingBox = document.getElementById('modalLackingList');
+            lackingBox.innerHTML = '';
+            if (details && details.lacking.length > 0) {
+                details.lacking.forEach(text => {
+                    lackingBox.innerHTML += `
+                        <div class="gap-item">
+                            <div class="gap-icon">+</div>
+                            <div>
+                                <div class="match-item-title" style="font-size: 12px;">${text}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                lackingBox.innerHTML = '<p style="font-size: 12px; color: #718096; margin-bottom: 16px;">Nothing is lacking. This job fits your profile.</p>';
+            }
 
             const btn = document.getElementById('modalStartAppBtn');
             if (isApplied) {
@@ -972,6 +1006,167 @@
                 loadHeader();
                 loadData();
             });
+        }
+
+        // Draws the job cards for the list it is given
+        function renderJobCards(jobs) {
+            const grid = document.getElementById('dynamicJobsGrid');
+            grid.innerHTML = '';
+            document.getElementById('jobCountSub').innerText = `${jobs.length} of ${allJobs.length} roles shown`;
+
+            if (jobs.length === 0) {
+                grid.innerHTML = '<p style="color:#718096;">No jobs match your search.</p>';
+                return;
+            }
+
+            jobs.forEach((job) => {
+                const hasApplied = myApplied.some(a => a.jobTitle === job.title && a.company === job.company);
+                const matchPct = job.matchPct;
+
+                const actionBtn = hasApplied
+                    ? `<button class="btn-applied" disabled>Applied</button>`
+                    : `<button class="btn-view-match" onclick="openJobModal('${encodeURIComponent(JSON.stringify(job))}', ${matchPct}, false)">View match</button>`;
+
+                grid.innerHTML += `
+                    <div class="job-card">
+                        <div>
+                            <div class="job-card-top">
+                                <div class="company-icon">${job.company ? job.company[0] : 'C'}</div>
+                                <div class="match-badge">${matchPct}% <span>Match</span></div>
+                            </div>
+                            <h3 class="job-title">${job.title}</h3>
+                            <p class="job-co">${job.company}</p>
+                            <div class="job-meta-row">
+                                <span>📍 ${job.location || 'Remote'}</span>
+                            </div>
+                            <div class="requirements-box">
+                                <div class="req-item"><span>✓</span> Accessible workspace compatible</div>
+                            </div>
+                        </div>
+                        <div class="job-card-footer">
+                            ${actionBtn}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Names of the labels a job ticked, in lower case
+        function labelNamesOf(job) {
+            const ids = job.labelIds || [];
+            return allLabelsData.filter(l => ids.includes(l.id)).map(l => l.name.toLowerCase());
+        }
+
+        // Remote = has Remote and does NOT have On-site or Hybrid
+        function isRemoteJob(job) {
+            const names = labelNamesOf(job);
+            return names.includes('remote') && !names.includes('on-site') && !names.includes('hybrid');
+        }
+
+        // Reads the popup, keeps the jobs that pass, and draws them
+        function runSearchFilters() {
+            const title = document.getElementById('sfTitle').value.trim().toLowerCase();
+            const company = document.getElementById('sfCompany').value.trim().toLowerCase();
+            const skill = document.getElementById('sfSkill').value.trim().toLowerCase();
+            const city = document.getElementById('sfLocation').value;
+            const setupInput = document.querySelector('input[name="sfSetup"]:checked');
+            const setupId = (setupInput && setupInput.value) ? parseInt(setupInput.value) : null;
+            const accessIds = Array.from(document.querySelectorAll('input[name="sfAccess"]:checked')).map(cb => parseInt(cb.value));
+
+            // Same four items the match score counts as offered by Remote jobs
+            const remoteAutoOffered = [
+                'Wheelchair-accessible entrance and workspace',
+                'Accessible restroom',
+                'Ground floor or elevator access',
+                'Transport or parking assistance'
+            ];
+
+            const result = allJobs.filter(job => {
+                const jobLabelIds = job.labelIds || [];
+                const remote = isRemoteJob(job);
+
+                if (title && !(job.title || '').toLowerCase().includes(title)) return false;
+                if (company && !(job.company || '').toLowerCase().includes(company)) return false;
+
+                if (skill) {
+                    const hasSkill = allLabelsData.some(l =>
+                        l.labelGroup === 'SKILL' && jobLabelIds.includes(l.id) && l.name.toLowerCase().includes(skill));
+                    if (!hasSkill) return false;
+                }
+
+                if (city && !remote && job.city !== city) return false;
+                if (setupId !== null && !jobLabelIds.includes(setupId)) return false;
+
+                for (const id of accessIds) {
+                    const label = allLabelsData.find(l => l.id === id);
+                    const offered = jobLabelIds.includes(id) || (remote && label && remoteAutoOffered.includes(label.name));
+                    if (!offered) return false;
+                }
+                return true;
+         });
+
+            renderJobCards(result);
+        }
+
+        function openSearchModal() {
+            renderSearchOptions();
+            document.getElementById('searchModal').style.display = 'flex'; 
+        }
+
+        function closeSearchModal() {
+            document.getElementById('searchModal').style.display = 'none';
+        }
+
+        // Fills the work setup, accessibility and location lists from the database (only once)
+        function renderSearchOptions() {
+            if (allLabelsData.length === 0 || allLocationsData.length === 0) return;
+            const setupBox = document.getElementById('sfSetupBox');
+            if (setupBox.innerHTML !== '') return;
+
+            setupBox.innerHTML = '<label class="checkbox-card"><input type="radio" name="sfSetup" value="" checked><span>Any work setup</span></label>';
+            allLabelsData.filter(l => l.labelGroup === 'WORK_SETUP').forEach(l => {
+                setupBox.innerHTML += `
+                    <label class="checkbox-card">
+                        <input type="radio" name="sfSetup" value="${l.id}">
+                        <span>${l.name}</span>
+                    </label>
+                `;
+            });
+
+            const accessBox = document.getElementById('sfAccessBox');
+            accessBox.innerHTML = '';
+            allLabelsData.filter(l => l.labelGroup === 'ACCESSIBILITY').forEach(l => {
+                accessBox.innerHTML += `
+                    <label class="checkbox-card">
+                        <input type="checkbox" name="sfAccess" value="${l.id}">
+                        <span>${l.name}</span>
+                    </label>
+                `;
+            });
+
+            const locSelect = document.getElementById('sfLocation');
+            locSelect.innerHTML = '<option value="">Any location</option>';
+            const cities = [...new Set(allLocationsData.map(l => l.city))].sort();
+            cities.forEach(c => {
+                locSelect.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+        }
+
+        function clearSearchForm() {
+            document.getElementById('sfTitle').value = '';
+            document.getElementById('sfCompany').value = '';
+            document.getElementById('sfSkill').value = '';
+            document.getElementById('sfLocation').value = '';
+            const anySetup = document.querySelector('input[name="sfSetup"][value=""]');
+            if (anySetup) anySetup.checked = true;
+            document.querySelectorAll('input[name="sfAccess"]').forEach(cb => { cb.checked = false; });
+        }
+
+        function applySearchFilters() {
+        // Show the job title in the page search bar
+            document.getElementById('searchInput').value = document.getElementById('sfTitle').value;
+            runSearchFilters();
+            closeSearchModal();
         }
 
         function switchView(viewName) {

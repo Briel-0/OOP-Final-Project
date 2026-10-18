@@ -81,28 +81,34 @@ public class ApplicantController {
         if (applicantId == null) {
             return ResponseEntity.status(401).body("Please log in first.");
         }
-    
 
-        List<Application> existing = applicationRepository.findAll();
+        // Only look at this applicant's own applications
+        List<Application> existing = applicationRepository.findByApplicantId(applicantId);
         for (Application a : existing) {
             if (jobTitle.equals(a.getJobTitle()) && company.equals(a.getCompany())) {
-            return ResponseEntity.ok(a);
+                return ResponseEntity.ok(a);
             }
         }
+        
 
-    Application app = new Application();
-    app.setApplicantId(applicantId);
-    app.setJobTitle(jobTitle);
-    app.setCompany(company);
-    app.setStatus("Under review");
-    app.setAppliedOn("Oct 11, 2026");
-    return ResponseEntity.ok(applicationRepository.save(app));
-}
+        Application app = new Application();
+        app.setApplicantId(applicantId);
+        app.setJobTitle(jobTitle);
+        app.setCompany(company);
+        app.setStatus("Under review");
+        app.setAppliedOn("Oct 11, 2026");
+        return ResponseEntity.ok(applicationRepository.save(app));
+    }
 
     @GetMapping("/api/applications")
     @ResponseBody
-    public List<Application> getMyApplications() {
-        return applicationRepository.findAll();
+    public ResponseEntity<?> getMyApplications(HttpSession session) {
+        // Only the logged-in applicant's applications
+        Long applicantId = (Long) session.getAttribute("applicantId");
+        if (applicantId == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        return ResponseEntity.ok(applicationRepository.findByApplicantId(applicantId));
     }
 
     @GetMapping("/api/notifications")
@@ -168,7 +174,7 @@ public class ApplicantController {
         response.put("fullName", fullName);
         response.put("email", email);
         response.put("profileStrength", profileStrength);
-        response.put("activeApplications", applicationRepository.count());
+        response.put("activeApplications", applicationRepository.findByApplicantId(applicantId).size());
         response.put("savedJobs", 0);
         response.put("unreadMessages", messageRepository.count());
         response.put("upcomingInterviews", 0);
