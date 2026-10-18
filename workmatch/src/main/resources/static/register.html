@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkMatch - Create Account</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #63887d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .register-card {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 520px;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #1a1a1a;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 24px;
+        }
+
+        /* Role Selection Cards */
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .role-box {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 10px;
+            text-align: left;
+            cursor: pointer;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+
+        .role-box.active {
+            border-color: #276749;
+            background-color: #f0fdf4;
+            box-shadow: 0 0 0 1px #276749;
+        }
+
+        .role-box h4 {
+            font-size: 12px;
+            color: #1a202c;
+            font-weight: 600;
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .role-box p {
+            font-size: 10px;
+            color: #a0aec0;
+            margin: 0;
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: #4a5568;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #2d3748;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #276749;
+            box-shadow: 0 0 0 3px rgba(39, 103, 73, 0.1);
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            background-color: #1b5e3d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 6px;
+        }
+
+        .btn-submit:hover {
+            background-color: #14472d;
+        }
+
+        /* Divider & Footer Link */
+        .divider-container {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 20px 0;
+            color: #cbd5e0;
+            font-size: 12px;
+        }
+
+        .divider-container::before,
+        .divider-container::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .divider-container span {
+            padding: 0 10px;
+            color: #a0aec0;
+            font-size: 12px;
+        }
+
+        .btn-secondary {
+            display: block;
+            width: 100%;
+            text-align: center;
+            background-color: #ffffff;
+            color: #2d3748;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background-color: #f7fafc;
+        }
+
+        .terms-text {
+            text-align: center;
+            font-size: 11px;
+            color: #a0aec0;
+            margin-top: 16px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="register-card">
+        <div class="header">
+            <h1>Create your account</h1>
+            <p>Build your profile and discover accessible opportunities.</p>
+        </div>
+
+        <!-- Role Selection Tabs -->
+        <div class="role-grid">
+            <div class="role-box active">
+                <h4>I'm looking for work</h4>
+                <p>Applicant account</p>
+            </div>
+            <div class="role-box">
+                <h4>I'm hiring talent</h4>
+                <p>Company account</p>
+            </div>
+            <div class="role-box">
+                <h4>I manage WorkMatch</h4>
+                <p>Administrator</p>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <form action="/register" method="POST">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="fullName" required placeholder="Jamie Mendoza">
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" required placeholder="jamie@example.com">
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" required placeholder="••••••••••••">
+            </div>
+
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" name="confirmPassword" required placeholder="••••••••••••">
+            </div>
+
+            <button type="submit" class="btn-submit">Create applicant account &gt;</button>
+        </form>
+
+        <div class="divider-container">
+            <span>Already have an account?</span>
+        </div>
+
+        <a href="/login.html" class="btn-secondary">Back to sign in</a>
+
+        <p class="terms-text">By continuing, you agree to our Terms of Use and Privacy Policy.</p>
+    </div>
+
+</body>
+</html>

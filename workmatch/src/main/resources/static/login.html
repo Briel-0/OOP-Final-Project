@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkMatch - Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: #f2f5f3; min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 40px 20px; }
+        
+        .auth-card { background: #ffffff; border-radius: 16px; width: 100%; max-width: 520px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e5e7eb; }
+        
+        .auth-header h1 { font-family: 'Playfair Display', serif; font-size: 32px; color: #1a202c; margin-bottom: 8px; font-weight: 600; }
+        .auth-header p { font-size: 14px; color: #6b7280; margin-bottom: 28px; }
+
+        /* Role Selector Cards */
+        .role-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+        .role-card { border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 12px; cursor: pointer; transition: all 0.2s ease; position: relative; background: #ffffff; text-align: left; }
+        .role-card.active { border-color: #1b5e3d; background-color: #f0fdf4; }
+        .role-card .check-icon { position: absolute; top: 10px; right: 10px; font-size: 12px; color: #1b5e3d; display: none; }
+        .role-card.active .check-icon { display: block; }
+        .role-icon { font-size: 18px; margin-bottom: 8px; color: #4b5563; }
+        .role-title { font-size: 12px; font-weight: 700; color: #1f2937; margin-bottom: 2px; }
+        .role-sub { font-size: 10px; color: #6b7280; }
+
+        /* Form Controls */
+        .form-group { margin-bottom: 18px; text-align: left; }
+        .form-label { display: block; font-size: 10px; font-weight: 700; color: #6b7280; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px; }
+        .form-input { width: 100%; padding: 12px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s; color: #1f2937; }
+        .form-input:focus { border-color: #1b5e3d; }
+
+        .flex-row { display: flex; gap: 12px; }
+        .flex-row .form-group { flex: 1; }
+
+        .forgot-link { float: right; font-size: 11px; color: #1b5e3d; text-decoration: none; font-weight: 500; }
+
+        /* Buttons */
+        .btn-submit { width: 100%; background-color: #1b5e3d; color: #ffffff; border: none; padding: 14px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 10px; }
+        .btn-submit:hover { background-color: #14472e; }
+
+        .divider { display: flex; align-items: center; text-align: center; color: #9ca3af; font-size: 11px; margin: 24px 0; }
+        .divider::before, .divider::after { content: ''; flex: 1; border-bottom: 1px solid #e5e7eb; }
+        .divider span { padding: 0 12px; }
+
+        .btn-secondary { width: 100%; background-color: #ffffff; color: #1b5e3d; border: 1px solid #d1d5db; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
+        .btn-secondary:hover { background-color: #f9fafb; }
+
+        /* File Upload Box */
+        .upload-box { border: 1px dashed #d1d5db; border-radius: 8px; padding: 16px; background: #f9fafb; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .upload-info h5 { font-size: 12px; color: #1f2937; font-weight: 600; }
+        .upload-info p { font-size: 10px; color: #6b7280; }
+        .btn-choose { background: #ffffff; border: 1px solid #d1d5db; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+
+        .notice-banner { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 12px; font-size: 11px; color: #166534; display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+
+        .footer-terms { margin-top: 24px; text-align: center; font-size: 11px; color: #9ca3af; }
+        .footer-terms a { color: #6b7280; text-decoration: underline; }
+
+        /* Toggle Views */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        <!-- HEADER -->
+        <div class="auth-header">
+            <h1 id="header-title">Welcome to WorkMatch</h1>
+            <p id="header-subtitle">Find suitable work or connect with qualified PWD talent.</p>
+        </div>
+
+        <!-- ROLE SELECTION -->
+        <div class="role-grid">
+            <div class="role-card active" id="role-applicant" onclick="selectRole('applicant')">
+                <span class="check-icon">✓</span>
+                <div class="role-icon">👤</div>
+                <div class="role-title">I'm looking for work</div>
+                <div class="role-sub">Applicant account</div>
+            </div>
+            <div class="role-card" id="role-company" onclick="selectRole('company')">
+                <span class="check-icon">✓</span>
+                <div class="role-icon">🏢</div>
+                <div class="role-title">I'm hiring talent</div>
+                <div class="role-sub">Company account</div>
+            </div>
+            <div class="role-card" id="role-admin" onclick="selectRole('admin')">
+                <span class="check-icon">✓</span>
+                <div class="role-icon">🛡️</div>
+                <div class="role-title">I manage WorkMatch</div>
+                <div class="role-sub">Administrator account</div>
+            </div>
+        </div>
+
+        <!-- SIGN IN FORM -->
+        <form id="signin-form">
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-input" placeholder="e.g. alex@example.com" required>
+            </div>
+            
+            <div class="form-group">
+                <div style="margin-bottom: 6px;">
+                    <label class="form-label" style="display:inline-block; margin:0;">Password</label>
+                    <a href="#" class="forgot-link">Forgot password?</a>
+                </div>
+                <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-submit" id="btn-signin-text">Sign in as applicant ›</button>
+
+            <div class="divider">
+                <span id="divider-text">New to WorkMatch?</span>
+            </div>
+
+            <button type="button" class="btn-secondary" id="btn-switch-register" onclick="toggleAuthMode('register')">Create an applicant account</button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="register-form" class="hidden">
+            <!-- APPLICANT EXTRA FIELDS -->
+            <div id="applicant-reg-fields">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" name="fullName" class="form-input" placeholder="e.g. Alex Reyes">
+                </div>
+            </div>
+
+            <!-- COMPANY EXTRA FIELDS -->
+            <div id="company-reg-fields" class="hidden">
+                <div class="form-group">
+                    <label class="form-label">Registered Company Name</label>
+                    <input type="text" name="companyName" class="form-input" placeholder="e.g. BrightPath Solutions">
+                </div>
+                <div class="flex-row">
+                    <div class="form-group">
+                        <label class="form-label">SEC / DTI Number</label>
+                        <input type="text" name="secDtiNumber" class="form-input" placeholder="e.g. CS2025-10482">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Company Website</label>
+                        <input type="text" name="website" class="form-input" placeholder="e.g. brightpath.example.com">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Proof of Legitimate Business <span style="color:#ef4444; font-size:9px;">REQUIRED</span></label>
+                    <div class="upload-box">
+                        <div class="upload-info">
+                            <h5>Upload company verification documents</h5>
+                            <p>SEC/DTI certificate, current business permit, or equivalent proof</p>
+                        </div>
+                        <button type="button" class="btn-choose" onclick="alert('Choose file dialog')">Choose file</button>
+                    </div>
+                </div>
+
+                <div class="notice-banner">
+                    🛡️ Job posting stays locked until an administrator verifies the company's identity and documents.
+                </div>
+            </div>
+
+            <!-- SHARED CREDENTIAL FIELDS -->
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" name="email" class="form-input" placeholder="e.g. people@brightpath.co" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" name="confirmPassword" class="form-input" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-submit" id="btn-register-text">Create account ›</button>
+
+            <div class="divider">
+                <span>Already have an account?</span>
+            </div>
+
+            <button type="button" class="btn-secondary" onclick="toggleAuthMode('signin')">Back to sign in</button>
+        </form>
+
+        <div class="footer-terms">
+            By continuing, you agree to our <a href="#">Terms of Use</a> and <a href="#">Privacy Policy</a>.
+        </div>
+    </div>
+
+    <script>
+        let currentRole = 'applicant';
+        let currentMode = 'signin';
+
+        function selectRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.role-card').forEach(card => card.classList.remove('active'));
+            document.getElementById('role-' + role).classList.add('active');
+            updateUI();
+        }
+
+        function toggleAuthMode(mode) {
+            currentMode = mode;
+            if (mode === 'register') {
+                document.getElementById('signin-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+            } else {
+                document.getElementById('register-form').classList.add('hidden');
+                document.getElementById('signin-form').classList.remove('hidden');
+            }
+            updateUI();
+        }
+
+        function updateUI() {
+            const headerTitle = document.getElementById('header-title');
+            const headerSubtitle = document.getElementById('header-subtitle');
+            const applicantRegFields = document.getElementById('applicant-reg-fields');
+            const companyRegFields = document.getElementById('company-reg-fields');
+            const btnSigninText = document.getElementById('btn-signin-text');
+            const btnRegisterText = document.getElementById('btn-register-text');
+            const btnSwitchRegister = document.getElementById('btn-switch-register');
+
+            if (currentMode === 'signin') {
+                headerTitle.innerText = "Welcome to WorkMatch";
+                headerSubtitle.innerText = "Find suitable work or connect with qualified PWD talent.";
+
+                if (currentRole === 'company') {
+                    btnSigninText.innerText = "Sign in as company ›";
+                    btnSwitchRegister.innerText = "Create a company account";
+                    btnSwitchRegister.classList.remove('hidden');
+                } else if (currentRole === 'admin') {
+                    btnSigninText.innerText = "Sign in as administrator ›";
+                    btnSwitchRegister.classList.add('hidden');
+                } else {
+                    btnSigninText.innerText = "Sign in as applicant ›";
+                    btnSwitchRegister.innerText = "Create an applicant account";
+                    btnSwitchRegister.classList.remove('hidden');
+                }
+            } else {
+                headerTitle.innerText = "Create your account";
+                if (currentRole === 'company') {
+                    headerSubtitle.innerText = "Companies are verified before they can publish jobs.";
+                    applicantRegFields.classList.add('hidden');
+                    companyRegFields.classList.remove('hidden');
+                    btnRegisterText.innerText = "Submit company for verification ›";
+                } else {
+                    headerSubtitle.innerText = "Create an account to search jobs and apply.";
+                    applicantRegFields.classList.remove('hidden');
+                    companyRegFields.classList.add('hidden');
+                    btnRegisterText.innerText = "Create applicant account ›";
+                }
+            }
+        }
+
+        document.getElementById('signin-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            let endpoint = '/api/auth/login';
+            if (currentRole === 'company') {
+                endpoint = '/api/auth/company/login';
+            } else if (currentRole === 'admin') {
+                endpoint = '/api/auth/admin/login';
+            }
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => {
+                if (res.ok) {
+                    return res.text().then(url => {
+                        window.location.href = (url && url.startsWith('/')) ? url : '/dashboard.html';
+                    });
+                } else {
+                    alert('Invalid email or password.');
+                }
+            })
+            .catch(err => {
+                console.error('Login error:', err);
+                alert('An error occurred during sign in.');
+            });
+        });
+
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            let endpoint = '/api/auth/register';
+            if (currentRole === 'company') {
+                endpoint = '/api/auth/company/register';
+            }
+
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => {
+                if (res.ok) {
+                    alert('Account registered successfully! You can now sign in.');
+                    toggleAuthMode('signin');
+                } else {
+                    alert('Failed to register account.');
+                }
+            })
+            .catch(err => {
+                console.error('Registration error:', err);
+                alert('An error occurred during registration.');
+            });
+        });
+
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('registered')) {
+                alert('Account registered successfully! You can now sign in.');
+            }
+        };
+    </script>
+</body>
+</html>
