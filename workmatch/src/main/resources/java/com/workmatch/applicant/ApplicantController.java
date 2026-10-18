@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import java.time.LocalDate;
 
 import java.util.*;
 
@@ -82,6 +83,14 @@ public class ApplicantController {
             return ResponseEntity.status(401).body("Please log in first.");
         }
 
+        // Block applying to a job that has closed
+        for (Job j : jobRepository.findAll()) {
+            if (jobTitle.equals(j.getTitle()) && company.equals(j.getCompany())
+                    && j.getClosingDate() != null && j.getClosingDate().isBefore(LocalDate.now())) {
+                return ResponseEntity.status(400).body("This job has closed.");    
+            }
+        }
+
         // Only look at this applicant's own applications
         List<Application> existing = applicationRepository.findByApplicantId(applicantId);
         for (Application a : existing) {
@@ -89,7 +98,7 @@ public class ApplicantController {
                 return ResponseEntity.ok(a);
             }
         }
-        
+    
 
         Application app = new Application();
         app.setApplicantId(applicantId);

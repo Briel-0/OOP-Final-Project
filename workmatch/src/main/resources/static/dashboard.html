@@ -895,6 +895,8 @@
                     fetch('/api/jobs')
                         .then(res => res.json())
                         .then(jobs => {
+                        // Applicants never see expired jobs
+                            if (Array.isArray(jobs)) jobs = jobs.filter(j => !j.expired);
                             const grid = document.getElementById('dynamicJobsGrid');
 
                             if (!Array.isArray(jobs) || jobs.length === 0) {
@@ -1000,11 +1002,20 @@
             fetch(`/api/applications/apply?jobTitle=${encodeURIComponent(jobTitle)}&company=${encodeURIComponent(company)}`, {
                 method: 'POST'
             })
-            .then(res => res.json())
-            .then(() => {
-                closeJobModal();
-                loadHeader();
-                loadData();
+            .then(res => {
+                if (!res.ok) {
+                    // For example, the job closed while the popup was open
+                    return res.text().then(msg => {
+                        alert(msg);
+                        closeJobModal();
+                        loadData();
+                    });
+                }
+                return res.json().then(() => {
+                    closeJobModal();
+                    loadHeader();
+                    loadData();
+                });
             });
         }
 

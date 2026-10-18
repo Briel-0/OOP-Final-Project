@@ -5,6 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "jobs")
@@ -25,6 +26,7 @@ public class Job {
     private String province;
     private String city;
     private String otherNotes;
+    private LocalDate closingDate;
 
     public Job() {
     }
@@ -89,4 +91,7 @@ public class Job {
 
     public String getOtherNotes() { return otherNotes; }
     public void setOtherNotes(String otherNotes) { this.otherNotes = otherNotes; }
+
+    public LocalDate getClosingDate() { return closingDate; }
+    public void setClosingDate(LocalDate closingDate) { this.closingDate = closingDate; }
 }

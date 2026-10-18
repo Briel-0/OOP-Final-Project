@@ -91,6 +91,10 @@
             color: #115e59;
             font-weight: 600;
         }
+
+        .view-section { display: none; }
+        .view-section.active-view { display: flex; flex-direction: column; gap: 24px; }
+
     </style>
 </head>
 <body>
@@ -117,9 +121,9 @@
 
                 <div class="nav-section-label">Recruitment</div>
                 <ul class="nav-menu">
-                    <li class="nav-item active"><a href="javascript:void(0)"><span>Dashboard</span></a></li>
+                    <li class="nav-item active" id="nav-dashboard"><a href="javascript:void(0)" onclick="switchView('dashboard')"><span>Dashboard</span></a></li>
                     <li class="nav-item"><a href="javascript:void(0)"><span>Job posts</span></a></li>
-                    <li class="nav-item"><a href="javascript:void(0)"><span>Candidates</span></a></li>
+                    <li class="nav-item" id="nav-candidates"><a href="javascript:void(0)" onclick="switchView('candidates')"><span>Candidates</span></a></li>
                     <li class="nav-item"><a href="javascript:void(0)"><span>Interviews</span></a></li>
                     <li class="nav-item"><a href="javascript:void(0)"><span>Messages</span></a></li>
                     <li class="nav-item"><a href="javascript:void(0)"><span>Notifications</span></a></li>
@@ -158,6 +162,8 @@
                 </div>
             </div>
 
+            <div id="view-dashboard" class="view-section active-view">
+                
             <div class="header-title">
                 <h1>Build a team where everyone belongs.</h1>
                 <p>Your inclusive recruitment overview for this week.</p>
@@ -186,13 +192,38 @@
                             <th>Job Title</th>
                             <th>Location</th>
                             <th>Salary Range</th>
+                            <th>Closes On</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="companyJobsTableBody">
-                        <tr><td colspan="4" style="text-align:center; color:#718096;">No active postings.</td></tr>
+                        <tr><td colspan="6" style="text-align:center; color:#718096;">No active postings.</td></tr>
                     </tbody>
                 </table>
+            </div>
+            </div>
+
+            <div id="view-candidates" class="view-section">
+                <div class="header-title">
+                    <h1>Applicant screening</h1>
+                    <p>Review candidates using qualifications and accommodations. Scores never automatically reject applicants.</p>
+                </div>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <table class="co-table">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Position</th>
+                                <th>Match</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidatesTableBody">
+                            <tr><td colspan="4" style="text-align:center; color:#718096;">No applicants yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
     </div>
@@ -228,6 +259,11 @@
                         <label>Salary Maximum (PHP/month)</label>
                         <input type="number" class="form-input" id="salaryMaxInput" placeholder="e.g. 40000">
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Applications Close On</label>
+                    <input type="date" class="form-input" id="closingDateInput" required>
                 </div>
 
                 <div class="form-group">
@@ -401,22 +437,35 @@
                     const tbody = document.getElementById('companyJobsTableBody');
                     tbody.innerHTML = '';
                     const companyName = document.getElementById('sidebarCompanyName').innerText;
-                    
+
                     const myJobs = jobs.filter(j => j.company === companyName);
-                    document.getElementById('activeJobCount').innerText = myJobs.length;
+
+                    // Only jobs that have not expired count as active
+                    const activeJobs = myJobs.filter(j => !j.expired);
+                    document.getElementById('activeJobCount').innerText = activeJobs.length;
 
                     if (myJobs.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#718096;">No active postings.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#718096;">No active postings.</td></tr>';
                         return;
                     }
 
+                    // Active jobs first, expired jobs last
+                    myJobs.sort((a, b) => Number(a.expired) - Number(b.expired));
+
                     myJobs.forEach(job => {
                         const salaryText = (job.salaryMin && job.salaryMax) ? `₱${job.salaryMin} - ₱${job.salaryMax}` : 'Negotiable';
+                        const closesText = job.closingDate ? job.closingDate : 'No closing date';
+                        const statusBadge = job.expired
+                            ? '<span style="background:#fee2e2; color:#b91c1c; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">Expired</span>'
+                            : '<span style="background:#dcfce7; color:#166534; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">Active</span>';
+
                         tbody.innerHTML += `
                             <tr>
                                 <td><strong>${job.title}</strong></td>
                                 <td>${job.city || 'Remote'}, ${job.province || ''}</td>
                                 <td>${salaryText}</td>
+                                <td>${closesText}</td>
+                                <td>${statusBadge}</td>
                                 <td><span style="color:#115e59; font-weight:600; cursor:pointer;">Manage</span></td>
                             </tr>
                         `;
@@ -452,6 +501,7 @@
                 province: document.getElementById('provinceSelect').value,
                 city: document.getElementById('citySelect').value,
                 otherNotes: document.getElementById('otherNotesInput').value,
+                closingDate: document.getElementById('closingDateInput').value,
                 labelIds: labelIds
             };
 
@@ -473,6 +523,56 @@
                 console.error('Error posting job:', err);
                 alert('An error occurred while publishing the job.');
             });
+        }
+
+        // Two letters for the round avatar
+        function getInitials(name) {
+            if (!name) return "--";
+            const parts = name.trim().split(/\s+/);
+            if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        // Switches between the Dashboard and Candidates pages
+        function switchView(viewName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-' + viewName).classList.add('active-view');
+            const nav = document.getElementById('nav-' + viewName);
+            if (nav) nav.classList.add('active');
+            if (viewName === 'candidates') loadCandidates();
+        }
+
+        // Fills the Candidates table with this company's real applicants
+        function loadCandidates() {
+            fetch('/api/company/applications')
+                .then(res => res.ok ? res.json() : [])
+                .then(apps => {
+                    const tbody = document.getElementById('candidatesTableBody');
+                    tbody.innerHTML = '';
+
+                    if (!Array.isArray(apps) || apps.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#718096;">No applicants yet.</td></tr>';
+                        return;
+                    }
+
+                    apps.forEach(a => {
+                        const matchText = (a.score !== null && a.score !== undefined) ? a.score + '%' : '-';
+                        tbody.innerHTML += `
+                            <tr>
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <div style="width:32px; height:32px; background:#f0fdf4; color:#115e59; border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:11px; font-weight:700;">${getInitials(a.applicantName)}</div>
+                                        <strong>${a.applicantName}</strong>
+                                    </div>
+                                </td>
+                                <td>${a.jobTitle}</td>
+                                <td><strong style="color:#115e59;">${matchText}</strong></td>
+                                <td><span style="background:#f0fdf4; color:#115e59; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">${a.status || 'Submitted'}</span></td>
+                            </tr>
+                        `;
+                    });
+                });
         }
 
         window.onload = function() {

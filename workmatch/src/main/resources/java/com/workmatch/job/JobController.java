@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import com.workmatch.LabelRepository;
 
 import java.util.*;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api")
@@ -81,6 +82,9 @@ public class JobController {
             dto.setOtherNotes(job.getOtherNotes());
             dto.setLabelIds(labelIds);
             dto.setMatchPct(matchPct);
+            // Expired when the closing date is before today
+            dto.setExpired(job.getClosingDate() != null && job.getClosingDate().isBefore(LocalDate.now()));
+            dto.setClosingDate(job.getClosingDate() != null ? job.getClosingDate().toString() : null);
             response.add(dto);
         }
 
@@ -160,17 +164,22 @@ public class JobController {
         job.setCity(dto.getCity());
         job.setOtherNotes(dto.getOtherNotes());
 
-        Job savedJob = jobRepository.save(job);
-
-        jobLabelRepository.deleteByJobId(savedJob.getId());
-        if (dto.getLabelIds() != null) {
-            for (Long labelId : dto.getLabelIds()) {
-                jobLabelRepository.save(new JobLabel(savedJob.getId(), labelId));
-            }
+        // Closing date comes as text like 2026-11-30
+        if (dto.getClosingDate() != null && !dto.getClosingDate().isBlank()) {
+            job.setClosingDate(LocalDate.parse(dto.getClosingDate()));
         }
 
-        return ResponseEntity.ok().body("Job posted successfully");
+    Job savedJob = jobRepository.save(job);
+
+    jobLabelRepository.deleteByJobId(savedJob.getId());
+    if (dto.getLabelIds() != null) {
+        for (Long labelId : dto.getLabelIds()) {
+            jobLabelRepository.save(new JobLabel(savedJob.getId(), labelId));
+        }
     }
+
+    return ResponseEntity.ok().body("Job posted successfully");
+}
 
     public static class JobRequestDto {
         private String title;
@@ -182,6 +191,7 @@ public class JobController {
         private String province;
         private String city;
         private String otherNotes;
+        private String closingDate;
         private List<Long> labelIds;
 
         public String getTitle() { return title; }
@@ -202,6 +212,8 @@ public class JobController {
         public void setCity(String city) { this.city = city; }
         public String getOtherNotes() { return otherNotes; }
         public void setOtherNotes(String otherNotes) { this.otherNotes = otherNotes; }
+        public String getClosingDate() { return closingDate; }
+        public void setClosingDate(String closingDate) { this.closingDate = closingDate; }
         public List<Long> getLabelIds() { return labelIds; }
         public void setLabelIds(List<Long> labelIds) { this.labelIds = labelIds; }
     }
@@ -221,6 +233,8 @@ public class JobController {
         private String otherNotes;
         private List<Long> labelIds;
         private int matchPct;
+        private boolean expired;
+        private String closingDate;
 
         public Long getId() { return id; }
         public void setId(Long id) { this.id = id; }
@@ -250,5 +264,9 @@ public class JobController {
         public void setLabelIds(List<Long> labelIds) { this.labelIds = labelIds; }
         public int getMatchPct() { return matchPct; }
         public void setMatchPct(int matchPct) { this.matchPct = matchPct; }
+        public boolean isExpired() { return expired; }
+        public void setExpired(boolean expired) { this.expired = expired; }
+        public String getClosingDate() { return closingDate; }
+        public void setClosingDate(String closingDate) { this.closingDate = closingDate; }
     }
 }
