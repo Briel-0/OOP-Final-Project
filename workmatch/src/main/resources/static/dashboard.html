@@ -658,10 +658,17 @@
 
         function loadHeader() {
             fetch('/api/applicant/me')
-                .then(res => res.json())
+                .then(res => {
+                    // Not logged in: go to the login page
+                    if (res.status === 401) {
+                        window.location.href = '/login.html';
+                        return null;
+                    }
+                    return res.json();
+                })
                 .then(data => {
+                    if (!data) return;
                     const fullName = data.fullName || "User";
-                    const email = data.email || "user@example.com";
                     const firstName = fullName.trim().split(/\s+/)[0];
                     const initials = getInitials(fullName);
 
@@ -687,6 +694,7 @@
                     loadProfileData();
                 });
         }
+                 
 
         function loadProfileData() {
             fetch('/api/labels')
@@ -883,13 +891,16 @@
                                 return;
                             }
 
+                            // Highest match first
+                            jobs.sort((a, b) => b.matchPct - a.matchPct);
+
                             document.getElementById('jobCountSub').innerText = `${jobs.length} roles shown based on database`;
                             document.getElementById('overviewRecTitle').innerText = jobs[0].title;
                             document.getElementById('overviewRecSub').innerText = `${jobs[0].company} • ${jobs[0].location || 'Remote'}`;
 
-                            jobs.forEach((job, index) => {
+                            jobs.forEach((job) => {
                                 const hasApplied = appliedList.some(a => a.jobTitle === job.title && a.company === job.company);
-                                const matchPct = 94 - (index * 5);
+                                const matchPct = job.matchPct;
 
                                 const actionBtn = hasApplied 
                                     ? `<button class="btn-applied" disabled>Applied</button>`
