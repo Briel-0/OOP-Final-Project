@@ -14,6 +14,12 @@ public class Message {
     private String messageText;
     private String createdAt;
     private Boolean isRead;
+    // Which applicant this chat belongs to
+    private Long applicantId;
+    // Who wrote it: "APPLICANT" or "COMPANY"
+    private String senderRole;
+    // Real date and time it was sent
+    private java.time.LocalDateTime sentAt;
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -29,4 +35,10 @@ public class Message {
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
     public Boolean getIsRead() { return isRead; }
     public void setIsRead(Boolean isRead) { this.isRead = isRead; }
+    public Long getApplicantId() { return applicantId; }
+    public void setApplicantId(Long applicantId) { this.applicantId = applicantId; }
+    public String getSenderRole() { return senderRole; }
+    public void setSenderRole(String senderRole) { this.senderRole = senderRole; }
+    public java.time.LocalDateTime getSentAt() { return sentAt; }
+    public void setSentAt(java.time.LocalDateTime sentAt) { this.sentAt = sentAt; }
 }

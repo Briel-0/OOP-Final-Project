@@ -196,7 +196,8 @@ public class ApplicantController {
         response.put("profileStrength", profileStrength);
         response.put("activeApplications", applicationRepository.findByApplicantId(applicantId).size());
         response.put("savedJobs", 0);
-        response.put("unreadMessages", messageRepository.count());
+        // Only unread messages that companies sent to this applicant
+        response.put("unreadMessages", messageRepository.countByApplicantIdAndSenderRoleAndIsReadFalse(applicantId, "COMPANY"));
         response.put("upcomingInterviews", 0);
         response.put("unreadNotifications", notificationRepository.count());
         return ResponseEntity.ok(response);
