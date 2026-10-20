@@ -234,6 +234,64 @@ public class CompanyController {
             return ResponseEntity.ok().body("Status updated");
         }
 
+        // Company accepts an applicant: they move to the Interviews page
+        @PostMapping("/api/company/applications/{id}/accept")
+        @ResponseBody
+        public ResponseEntity<?> acceptApplication(@PathVariable Long id, HttpSession session) {
+            String companyName = (String) session.getAttribute("companyName");
+            if (companyName == null) {
+                return ResponseEntity.status(401).body("Please log in first.");
+            }
+
+            // The application must exist and belong to this company
+            Application a = applicationRepository.findById(id).orElse(null);
+            if (a == null || !companyName.equals(a.getCompany())) {
+                return ResponseEntity.status(404).body("Application not found.");
+            }
+
+            // Only new applications can be accepted
+            if (!"Submitted".equals(a.getStatus()) && !"Under review".equals(a.getStatus())) {
+                return ResponseEntity.badRequest().body("This application can no longer be accepted.");
+            }
+
+            a.setStatus("Interview invited");
+            applicationRepository.save(a);
+            return ResponseEntity.ok().body("Applicant accepted");
+        }
+
+        // Company rejects an applicant and saves the reason
+        @PostMapping("/api/company/applications/{id}/reject")
+        @ResponseBody
+        public ResponseEntity<?> rejectApplication(@PathVariable Long id,
+                                                @RequestBody Map<String, String> payload,
+                                                HttpSession session) {
+            String companyName = (String) session.getAttribute("companyName");
+            if (companyName == null) {
+                return ResponseEntity.status(401).body("Please log in first.");
+            }
+
+            String reason = payload.get("reason");
+            if (reason == null || reason.isBlank()) {
+                return ResponseEntity.badRequest().body("Please pick a reason.");
+            }
+
+            // The application must exist and belong to this company
+            Application a = applicationRepository.findById(id).orElse(null);
+            if (a == null || !companyName.equals(a.getCompany())) {
+                return ResponseEntity.status(404).body("Application not found.");
+            }
+
+            // A hired or already rejected applicant cannot be rejected again
+            if ("Hired".equals(a.getStatus()) || "Not selected".equals(a.getStatus())) {
+                return ResponseEntity.badRequest().body("This application is already closed.");
+            }
+
+            a.setStatus("Not selected");
+            a.setRejectionReason(reason.trim());
+            applicationRepository.save(a);
+            return ResponseEntity.ok().body("Applicant rejected");
+        }
+
         // Used when the page sends JSON (login.html does this)
         @PostMapping(value = "/api/auth/company/register", consumes = "application/json")
         @ResponseBody

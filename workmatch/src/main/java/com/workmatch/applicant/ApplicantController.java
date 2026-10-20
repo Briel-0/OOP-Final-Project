@@ -83,11 +83,14 @@ public class ApplicantController {
             return ResponseEntity.status(401).body("Please log in first.");
         }
 
-        // Block applying to a job that has closed
+        // Find the job, and block applying if it has closed
+        Long jobId = null;
         for (Job j : jobRepository.findAll()) {
-            if (jobTitle.equals(j.getTitle()) && company.equals(j.getCompany())
-                    && j.getClosingDate() != null && j.getClosingDate().isBefore(LocalDate.now())) {
-                return ResponseEntity.status(400).body("This job has closed.");    
+            if (jobTitle.equals(j.getTitle()) && company.equals(j.getCompany())) {
+                jobId = j.getId();
+                if (j.getClosingDate() != null && j.getClosingDate().isBefore(LocalDate.now())) {
+                    return ResponseEntity.status(400).body("This job has closed.");
+                }
             }
         }
 
@@ -98,10 +101,10 @@ public class ApplicantController {
                 return ResponseEntity.ok(a);
             }
         }
-    
 
         Application app = new Application();
         app.setApplicantId(applicantId);
+        app.setJobId(jobId);
         app.setJobTitle(jobTitle);
         app.setCompany(company);
         app.setStatus("Submitted");

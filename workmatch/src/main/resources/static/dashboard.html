@@ -1266,6 +1266,10 @@
                         box.innerHTML = '<p style="font-size:13px; color:#718096;">No messages yet. Say hello!</p>';
                     }
                     messages.forEach(m => {
+                        if (m.messageType === 'SCHEDULE') {
+                            box.appendChild(buildScheduleCard(m));
+                            return;
+                        }
                         const mine = m.senderRole === 'APPLICANT';
                         const bubble = document.createElement('div');
                         bubble.style.cssText = 'max-width:70%; padding:10px 14px; border-radius:12px; font-size:13px; '
@@ -1282,6 +1286,66 @@
                     box.scrollTop = box.scrollHeight;
                     loadChatList();
                     loadHeader();
+                });
+        }
+
+        // Draws an interview schedule card
+        function buildScheduleCard(m) {
+            const card = document.createElement('div');
+            card.style.cssText = 'align-self:flex-start; max-width:80%; background:#faf5ff; border:1px solid #d8b4fe; border-radius:12px; padding:14px 16px;';
+
+            const title = document.createElement('div');
+            title.style.cssText = 'font-size:10px; font-weight:700; color:#6b21a8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;';
+            title.innerText = 'Interview schedule';
+            const text = document.createElement('div');
+            text.style.cssText = 'font-size:13px; font-weight:600; color:#1a202c; margin-bottom:10px;';
+            text.innerText = m.messageText;
+            card.appendChild(title);
+            card.appendChild(text);
+
+            if (m.cardStatus === 'Pending') {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; gap:8px;';
+                const yes = document.createElement('button');
+                yes.type = 'button';
+                yes.className = 'btn-purple';
+                yes.innerText = 'Confirm time';
+                yes.onclick = function() { answerScheduleCard(m.id, 'confirm'); };
+                const no = document.createElement('button');
+                no.type = 'button';
+                no.className = 'btn-purple-outline';
+                no.innerText = "Can't make it";
+                no.onclick = function() { answerScheduleCard(m.id, 'decline'); };
+                row.appendChild(yes);
+                row.appendChild(no);
+                card.appendChild(row);
+            } else {
+                const label = document.createElement('div');
+                label.style.cssText = 'font-size:12px; font-weight:700;';
+                if (m.cardStatus === 'Confirmed') {
+                    label.style.color = '#15803d';
+                    label.innerText = '✓ You confirmed this time';
+                } else if (m.cardStatus === 'Declined') {
+                    label.style.color = '#b45309';
+                    label.innerText = "You said you can't make it";
+                } else {
+                    label.style.color = '#718096';
+                    label.innerText = 'Replaced by a newer time';
+                }
+                card.appendChild(label);
+            }
+            return card;
+        }
+
+        // Sends Confirm or Can't make it for one card
+        function answerScheduleCard(messageId, action) {
+            fetch('/api/chat/applicant/card/' + messageId + '/' + action, { method: 'POST' })
+                .then(res => {
+                    if (!res.ok) {
+                        res.text().then(msg => alert(msg));
+                    }
+                    openChat(chatCompany);
+                    loadData();
                 });
         }
 

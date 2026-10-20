@@ -20,6 +20,12 @@ public class Message {
     private String senderRole;
     // Real date and time it was sent
     private java.time.LocalDateTime sentAt;
+    // "TEXT" for normal chat, "SCHEDULE" for an interview card (old rows are empty, treat as TEXT)
+    private String messageType;
+    // Which application a card is about
+    private Long applicationId;
+    // For cards: Pending, Confirmed, Declined or Replaced
+    private String cardStatus;
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -41,4 +47,10 @@ public class Message {
     public void setSenderRole(String senderRole) { this.senderRole = senderRole; }
     public java.time.LocalDateTime getSentAt() { return sentAt; }
     public void setSentAt(java.time.LocalDateTime sentAt) { this.sentAt = sentAt; }
+    public String getMessageType() { return messageType; }
+    public void setMessageType(String messageType) { this.messageType = messageType; }
+    public Long getApplicationId() { return applicationId; }
+    public void setApplicationId(Long applicationId) { this.applicationId = applicationId; }
+    public String getCardStatus() { return cardStatus; }
+    public void setCardStatus(String cardStatus) { this.cardStatus = cardStatus; }
 }

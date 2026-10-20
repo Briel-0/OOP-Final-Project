@@ -13,6 +13,10 @@ public class Application {
     private String company;
     private String status;
     private String appliedOn;
+    // Which job this application is for
+    private Long jobId;
+    // Why the company rejected it (filled in later)
+    private String rejectionReason;
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -26,4 +30,8 @@ public class Application {
     public void setStatus(String status) { this.status = status; }
     public String getAppliedOn() { return appliedOn; }
     public void setAppliedOn(String appliedOn) { this.appliedOn = appliedOn; }
+    public Long getJobId() { return jobId; }
+    public void setJobId(Long jobId) { this.jobId = jobId; }
+    public String getRejectionReason() { return rejectionReason; }
+    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
 }

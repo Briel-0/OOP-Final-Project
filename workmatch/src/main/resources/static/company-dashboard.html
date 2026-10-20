@@ -131,7 +131,7 @@
                     <li class="nav-item active" id="nav-dashboard"><a href="javascript:void(0)" onclick="switchView('dashboard')"><span>Dashboard</span></a></li>
                     <li class="nav-item"><a href="javascript:void(0)"><span>Job posts</span></a></li>
                     <li class="nav-item" id="nav-candidates"><a href="javascript:void(0)" onclick="switchView('candidates')"><span>Candidates</span></a></li>
-                    <li class="nav-item"><a href="javascript:void(0)"><span>Interviews</span></a></li>
+                    <li class="nav-item" id="nav-interviews"><a href="javascript:void(0)" onclick="switchView('interviews')"><span>Interviews</span></a></li>
                     <li class="nav-item" id="nav-messages"><a href="javascript:void(0)" onclick="switchView('messages')"><span>Messages</span></a></li>
                     <li class="nav-item"><a href="javascript:void(0)"><span>Notifications</span></a></li>
                 </ul>
@@ -256,6 +256,30 @@
                     </div>
                 </div>
             </div>
+
+            <div id="view-interviews" class="view-section">
+                <div class="header-title">
+                    <h1>Interviews</h1>
+                    <p>Applicants you accepted. Set the interview time and the applicant will confirm it in Messages.</p>
+                </div>
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <table class="co-table">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Position</th>
+                                <th>Interview time</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="interviewsTableBody">
+                            <tr><td colspan="5" style="text-align:center; color:#718096;">No accepted applicants yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -415,24 +439,51 @@
                 <div id="cdOtherNeeds" style="font-size: 13px; font-weight: 600; color: #1a202c;"></div>
             </div>
 
-            <div class="form-group" style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
-                <label>Change status</label>
+            <div id="cdRejectBox" class="form-group" style="display: none; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                <label>Reason for rejecting</label>
                 <div style="display: flex; gap: 10px; align-items: center;">
-                <select id="cdStatusSelect" class="form-input">
-                    <option value="">Choose a new status</option>
-                    <option value="Under review">Under review</option>
-                    <option value="Interview invited">Interview invited</option>
-                    <option value="Offer sent">Offer sent</option>
-                    <option value="Hired">Hired</option>
-                    <option value="Not selected">Not selected</option>
-                </select>
-                <button type="button" onclick="saveCandidateStatus()" style="background: #115e59; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">Save status</button>
+                    <select id="cdReasonSelect" class="form-input"></select>
+                    <button type="button" onclick="confirmReject()" style="background: #b91c1c; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">Confirm reject</button>
+                </div>
             </div>
-            <span id="cdStatusMsg" style="font-size: 12px; font-weight: 600;"></span>
-        </div>
+            <span id="cdStatusMsg" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 12px;"></span>
 
-            <div style="display: flex; justify-content: flex-end; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                <button type="button" id="cdRejectBtn" onclick="showRejectBox()" style="background: white; border: 1px solid #b91c1c; color: #b91c1c; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Reject</button>
+                <button type="button" id="cdAcceptBtn" onclick="acceptCandidate()" style="background: #115e59; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Accept</button>
                 <button type="button" onclick="closeCandidateModal()" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCHEDULE INTERVIEW POPUP -->
+    <div class="modal-overlay" id="scheduleModal">
+        <div class="modal-card" style="width: 460px;">
+            <p style="font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">Interview details</p>
+            <h2 id="schName" style="font-size: 20px; font-weight: 700; color: #1a202c;">Name</h2>
+            <p id="schJob" style="font-size: 13px; color: #115e59; margin-bottom: 20px;"></p>
+
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="schDate" class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Time</label>
+                <input type="time" id="schTime" class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Length</label>
+                <select id="schDuration" class="form-input">
+                    <option value="30">30 minutes</option>
+                    <option value="45">45 minutes</option>
+                    <option value="60">60 minutes</option>
+                </select>
+            </div>
+            <span id="schMsg" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 12px;"></span>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                <button type="button" onclick="closeScheduleModal()" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Close</button>
+                <button type="button" onclick="saveSchedule()" style="background: #115e59; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Save interview</button>
             </div>
         </div>
     </div>
@@ -735,6 +786,91 @@
             });
         }
 
+        let currentInterviewAppId = null;
+
+        // Fills the Interviews table with the applicants the company accepted
+        function loadInterviews() {
+            fetch('/api/company/interviews')
+                .then(res => res.ok ? res.json() : [])
+                .then(list => {
+                    const tbody = document.getElementById('interviewsTableBody');
+                    tbody.innerHTML = '';
+                    if (!Array.isArray(list) || list.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#718096;">No accepted applicants yet.</td></tr>';
+                        return;
+                    }
+                    list.forEach(i => {
+                        const timeText = i.scheduledAt
+                            ? i.scheduledAt.replace('T', ' ').substring(0, 16) + ' (' + i.durationMinutes + ' min)'
+                            : 'Not scheduled';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong></strong></td>
+                            <td></td>
+                            <td>${timeText}</td>
+                            <td><span style="background:#f0fdf4; color:#115e59; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">${i.status}</span></td>
+                            <td></td>`;
+                        tr.children[0].children[0].innerText = i.applicantName;
+                        tr.children[1].innerText = i.jobTitle;
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.style.cssText = 'background:white; border:1px solid #115e59; color:#115e59; padding:6px 14px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;';
+                        btn.innerText = i.scheduledAt ? 'Reschedule interview' : 'View details';
+                        btn.onclick = function() { openScheduleModal(i); };
+                        tr.children[4].appendChild(btn);
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        // Opens the popup for one applicant
+        function openScheduleModal(i) {
+            currentInterviewAppId = i.applicationId;
+            document.getElementById('schName').innerText = i.applicantName;
+            document.getElementById('schJob').innerText = i.jobTitle;
+            document.getElementById('schMsg').innerText = '';
+            if (i.scheduledAt) {
+                document.getElementById('schDate').value = i.scheduledAt.substring(0, 10);
+                document.getElementById('schTime').value = i.scheduledAt.substring(11, 16);
+                document.getElementById('schDuration').value = String(i.durationMinutes);
+            } else {
+                document.getElementById('schDate').value = '';
+                document.getElementById('schTime').value = '';
+                document.getElementById('schDuration').value = '30';
+            }
+            document.getElementById('scheduleModal').style.display = 'flex';
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'none';
+        }
+
+        // Saves the date, time and length
+        function saveSchedule() {
+            const msg = document.getElementById('schMsg');
+            const date = document.getElementById('schDate').value;
+            const time = document.getElementById('schTime').value;
+            const duration = document.getElementById('schDuration').value;
+            if (!date || !time) {
+                msg.style.color = '#b91c1c';
+                msg.innerText = 'Please pick a date and a time.';
+                return;
+            }
+            fetch('/api/company/interviews/' + currentInterviewAppId + '/schedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: date, time: time, duration: duration })
+            })
+            .then(res => {
+                if (res.ok) {
+                    closeScheduleModal();
+                    loadInterviews();
+                } else {
+                    res.text().then(t => { msg.style.color = '#b91c1c'; msg.innerText = t; });
+                }
+            });
+        }
+
         // Switches between the Dashboard and Candidates pages
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
@@ -744,6 +880,7 @@
             if (nav) nav.classList.add('active');
             if (viewName === 'candidates') loadCandidates();
             if (viewName === 'messages') loadChatList();
+            if (viewName === 'interviews') loadInterviews();
         }
 
         // Fills the Candidates table with this company's real applicants
@@ -820,7 +957,6 @@
                     }
 
                     currentCandidateId = id;
-                    document.getElementById('cdStatusSelect').value = '';
                     document.getElementById('cdStatusMsg').innerText = '';
                     document.getElementById('cdAvatar').innerText = getInitials(d.applicantName);
                     document.getElementById('cdName').innerText = d.applicantName || 'Unknown';
@@ -835,6 +971,7 @@
                         (d.experienceYears !== null && d.experienceYears !== undefined) ? d.experienceYears + ' years' : 'Not provided';
                     const place = [d.city, d.province].filter(p => p && p.length > 0).join(', ');
                     document.getElementById('cdLocation').innerText = place || 'Not provided';
+                    setupCandidateButtons(d.status || 'Submitted');
 
                     // Skills as small chips
                     const skillsBox = document.getElementById('cdSkills');
@@ -863,29 +1000,73 @@
             document.getElementById('candidateModal').style.display = 'none';
         }
 
-        // Saves the new status picked in the popup
-        function saveCandidateStatus() {
-            const newStatus = document.getElementById('cdStatusSelect').value;
+                // Shows or hides the buttons depending on the status, and fills the reasons
+        function setupCandidateButtons(status) {
+            const canAccept = status === 'Submitted' || status === 'Under review';
+            const closed = status === 'Hired' || status === 'Not selected';
+            document.getElementById('cdAcceptBtn').style.display = canAccept ? 'inline-block' : 'none';
+            document.getElementById('cdRejectBtn').style.display = closed ? 'none' : 'inline-block';
+            document.getElementById('cdRejectBox').style.display = 'none';
+
+            const select = document.getElementById('cdReasonSelect');
+            select.innerHTML = '<option value="">Choose a reason</option>';
+            allLabelsData
+                .filter(l => l.labelGroup === 'REJECTION_REASON')
+                .sort((a, b) => a.rankOrder - b.rankOrder)
+                .forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.name;
+                    opt.innerText = l.name;
+                    select.appendChild(opt);
+                });
+        }
+
+        function showRejectBox() {
+            const box = document.getElementById('cdRejectBox');
+            box.style.display = 'block';
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // Accept: status becomes Interview invited
+        function acceptCandidate() {
             const msg = document.getElementById('cdStatusMsg');
-            if (!newStatus) {
+            fetch('/api/company/applications/' + currentCandidateId + '/accept', { method: 'POST' })
+            .then(res => {
+                if (res.ok) {
+                    msg.style.color = '#15803d';
+                    msg.innerText = '✓ Applicant accepted';
+                    document.getElementById('cdStatus').innerText = 'Interview invited';
+                    setupCandidateButtons('Interview invited');
+                    loadCandidates();
+                } else {
+                    res.text().then(t => { msg.style.color = '#b91c1c'; msg.innerText = t; });
+                }
+            });
+        }
+
+        // Reject: needs a reason, status becomes Not selected
+        function confirmReject() {
+            const msg = document.getElementById('cdStatusMsg');
+            const reason = document.getElementById('cdReasonSelect').value;
+            if (!reason) {
                 msg.style.color = '#b91c1c';
-                msg.innerText = 'Please choose a status first.';
+                msg.innerText = 'Please choose a reason first.';
                 return;
             }
-            fetch('/api/company/applications/' + currentCandidateId + '/status', {
+            fetch('/api/company/applications/' + currentCandidateId + '/reject', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+                body: JSON.stringify({ reason: reason })
             })
             .then(res => {
                 if (res.ok) {
                     msg.style.color = '#15803d';
-                    msg.innerText = '✓ Status updated';
-                    document.getElementById('cdStatus').innerText = newStatus;
+                    msg.innerText = '✓ Applicant rejected';
+                    document.getElementById('cdStatus').innerText = 'Not selected';
+                    setupCandidateButtons('Not selected');
                     loadCandidates();
                 } else {
-                    msg.style.color = '#b91c1c';
-                    msg.innerText = 'Could not update the status.';
+                    res.text().then(t => { msg.style.color = '#b91c1c'; msg.innerText = t; });
                 }
             });
         }

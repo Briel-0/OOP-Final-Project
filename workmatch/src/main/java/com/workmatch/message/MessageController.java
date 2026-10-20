@@ -144,6 +144,53 @@ public class MessageController {
         return ResponseEntity.ok(saveMessage(applicantId, company, "APPLICANT", name, text.trim()));
     }
 
+    // Applicant confirms the interview time on a schedule card
+    @PostMapping("/applicant/card/{messageId}/confirm")
+    public ResponseEntity<?> confirmInterview(@PathVariable Long messageId, HttpSession session) {
+        Long applicantId = (Long) session.getAttribute("applicantId");
+        if (applicantId == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        Message card = messageRepository.findById(messageId).orElse(null);
+        if (card == null || !applicantId.equals(card.getApplicantId()) || !"SCHEDULE".equals(card.getMessageType())) {
+            return ResponseEntity.status(404).body("Card not found.");
+        }
+        if (!"Pending".equals(card.getCardStatus())) {
+            return ResponseEntity.badRequest().body("This card is no longer open.");
+        }
+        Application a = applicationRepository.findById(card.getApplicationId()).orElse(null);
+        if (a == null || !"Interview invited".equals(a.getStatus())) {
+            return ResponseEntity.badRequest().body("This interview can no longer be confirmed.");
+        }
+
+        a.setStatus("Interview scheduled");
+        applicationRepository.save(a);
+        card.setCardStatus("Confirmed");
+        messageRepository.save(card);
+        return ResponseEntity.ok().body("Interview confirmed");
+    }
+
+    // Applicant says they cannot make the time
+    @PostMapping("/applicant/card/{messageId}/decline")
+    public ResponseEntity<?> declineInterview(@PathVariable Long messageId, HttpSession session) {
+        Long applicantId = (Long) session.getAttribute("applicantId");
+        if (applicantId == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        Message card = messageRepository.findById(messageId).orElse(null);
+        if (card == null || !applicantId.equals(card.getApplicantId()) || !"SCHEDULE".equals(card.getMessageType())) {
+            return ResponseEntity.status(404).body("Card not found.");
+        }
+        if (!"Pending".equals(card.getCardStatus())) {
+            return ResponseEntity.badRequest().body("This card is no longer open.");
+        }
+
+        // The status stays Interview invited so the company can pick a new time
+        card.setCardStatus("Declined");
+        messageRepository.save(card);
+        return ResponseEntity.ok().body("Marked as can't make it");
+    }
+
     // ---------- COMPANY SIDE ----------
 
     // Applicants who applied to this company
