@@ -24,6 +24,7 @@ public class Applicant {
     private String province;
     private String city;
     private String otherNeeds;
+    private String program;
 
     public Applicant() {}
 
@@ -67,4 +68,7 @@ public class Applicant {
 
     public String getOtherNeeds() { return otherNeeds; }
     public void setOtherNeeds(String otherNeeds) { this.otherNeeds = otherNeeds; }
+
+    public String getProgram() { return program; }
+    public void setProgram(String program) { this.program = program; }
 }

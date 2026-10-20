@@ -59,6 +59,19 @@ public class CompanyController {
         return companyRepository.findById(id).orElse(null);
     }
 
+    // Tells the page which company is logged in (from the session)
+    @GetMapping("/api/company/me")
+    @ResponseBody
+    public ResponseEntity<?> getCompanyInfo(HttpSession session) {
+        String companyName = (String) session.getAttribute("companyName");
+        if (companyName == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("companyName", companyName);
+        return ResponseEntity.ok(response);
+    }
+
     // Lists the applications sent to the logged-in company's jobs, with a match score
     @GetMapping("/api/company/applications")
     @ResponseBody
@@ -70,7 +83,6 @@ public class CompanyController {
 
         List<Job> allJobs = jobRepository.findAll();
         List<Map<String, Object>> result = new ArrayList<>();
-
         for (Application a : applicationRepository.findByCompany(companyName)) {
             // Old rows may have no applicant id, so check first
             Applicant applicant = a.getApplicantId() != null
@@ -111,33 +123,126 @@ public class CompanyController {
         return ResponseEntity.ok(result);
     }
 
-    // Gets the full labels the company ticked for one job
-    private List<Label> loadJobLabels(Long jobId) {
-        List<Long> ids = new ArrayList<>();
-        for (JobLabel jl : jobLabelRepository.findByJobId(jobId)) {
-            ids.add(jl.getLabelId());
+    // Gives the full details of one applicant for the logged-in company
+    @GetMapping("/api/company/applications/{id}")
+    @ResponseBody
+    public ResponseEntity<?> getApplicationDetails(@PathVariable Long id, HttpSession session) {
+        String companyName = (String) session.getAttribute("companyName");
+        if (companyName == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
         }
-        return labelRepository.findAllById(ids);
+
+        // The application must exist and belong to this company
+        Application a = applicationRepository.findById(id).orElse(null);
+        if (a == null || !companyName.equals(a.getCompany()) || a.getApplicantId() == null) {
+            return ResponseEntity.status(404).body("Application not found.");
+        }
+        Applicant applicant = applicantRepository.findById(a.getApplicantId()).orElse(null);
+        if (applicant == null) {
+            return ResponseEntity.status(404).body("Applicant not found.");
+        }
+    
+
+        // Sort the applicant's ticked labels by group
+        List<String> skills = new ArrayList<>();
+        List<String> workSetup = new ArrayList<>();
+        List<String> accessibilityNeeds = new ArrayList<>();
+        List<String> physicalLimits = new ArrayList<>();
+        for (Label l : loadApplicantLabels(applicant.getId())) {
+            if ("SKILL".equals(l.getLabelGroup())) skills.add(l.getName());
+            else if ("WORK_SETUP".equals(l.getLabelGroup())) workSetup.add(l.getName());
+            else if ("ACCESSIBILITY".equals(l.getLabelGroup())) accessibilityNeeds.add(l.getName());
+            else if ("PHYSICAL_DEMAND".equals(l.getLabelGroup())) physicalLimits.add(l.getName());
+        }
+    
+
+        // Education name comes from the education label with the same rank
+        String education = "";
+        if (applicant.getEducationRank() != null) {
+            for (Label l : labelRepository.findAll()) {
+                if ("EDUCATION".equals(l.getLabelGroup())
+                        && applicant.getEducationRank().equals(l.getRankOrder())) {
+                    education = l.getName();
+                }
+            }
+        }
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("applicantName", applicant.getFullName());
+        response.put("applicantEmail", applicant.getEmail());
+        response.put("jobTitle", a.getJobTitle());
+        response.put("status", a.getStatus());
+        response.put("appliedOn", a.getAppliedOn());
+        response.put("education", education);
+        response.put("program", applicant.getProgram());
+        response.put("experienceYears", applicant.getExperienceYears());
+        response.put("region", applicant.getRegion());
+        response.put("province", applicant.getProvince());
+        response.put("city", applicant.getCity());
+        response.put("otherNeeds", applicant.getOtherNeeds());
+        response.put("skills", skills);
+        response.put("workSetup", workSetup);
+        response.put("accessibilityNeeds", accessibilityNeeds);
+        response.put("physicalLimits", physicalLimits);
+        return ResponseEntity.ok(response);
     }
 
-    // Gets the full labels one applicant ticked
-    private List<Label> loadApplicantLabels(Long applicantId) {
-        List<Long> ids = new ArrayList<>();
-        for (ApplicantLabel al : applicantLabelRepository.findByApplicantId(applicantId)) {
-            ids.add(al.getLabelId());
+        // Gets the full labels the company ticked for one job
+        private List<Label> loadJobLabels(Long jobId) {
+            List<Long> ids = new ArrayList<>();
+            for (JobLabel jl : jobLabelRepository.findByJobId(jobId)) {
+                ids.add(jl.getLabelId());
+            }
+            return labelRepository.findAllById(ids);
         }
-        return labelRepository.findAllById(ids);
-    }
+
+        // Gets the full labels one applicant ticked
+        private List<Label> loadApplicantLabels(Long applicantId) {
+            List<Long> ids = new ArrayList<>();
+            for (ApplicantLabel al : applicantLabelRepository.findByApplicantId(applicantId)) {
+                ids.add(al.getLabelId());
+            }
+            return labelRepository.findAllById(ids);
+        }
+
+        // Lets the logged-in company change the status of one of its applications
+        @PostMapping("/api/company/applications/{id}/status")
+        @ResponseBody
+        public ResponseEntity<?> changeApplicationStatus(@PathVariable Long id,
+                                                        @RequestBody Map<String, String> payload,
+                                                        HttpSession session) {
+            String companyName = (String) session.getAttribute("companyName");
+            if (companyName == null) {
+                return ResponseEntity.status(401).body("Please log in first.");
+            }
+
+            // Only these statuses can be picked by the company
+            List<String> allowed = List.of("Under review", "Interview invited", "Offer sent", "Hired", "Not selected");
+            String newStatus = payload.get("status");
+            if (newStatus == null || !allowed.contains(newStatus)) {
+                return ResponseEntity.badRequest().body("Invalid status.");
+            }
+
+            // The application must exist and belong to this company
+            Application a = applicationRepository.findById(id).orElse(null);
+            if (a == null || !companyName.equals(a.getCompany())) {
+                return ResponseEntity.status(404).body("Application not found.");
+            }
+
+            a.setStatus(newStatus);
+            applicationRepository.save(a);
+            return ResponseEntity.ok().body("Status updated");
+        }
 
         // Used when the page sends JSON (login.html does this)
-    @PostMapping(value = "/api/auth/company/register", consumes = "application/json")
-    @ResponseBody
-    public ResponseEntity<?> registerCompanyJson(@RequestBody CompanyDto dto) {
-        if (saveCompany(dto)) {
-            return ResponseEntity.ok().body("Registered successfully");
+        @PostMapping(value = "/api/auth/company/register", consumes = "application/json")
+        @ResponseBody
+        public ResponseEntity<?> registerCompanyJson(@RequestBody CompanyDto dto) {
+            if (saveCompany(dto)) {
+                return ResponseEntity.ok().body("Registered successfully");
+            }
+            return ResponseEntity.badRequest().body("Email already registered");
         }
-        return ResponseEntity.badRequest().body("Email already registered");
-    }
 
     // Used when a normal HTML form is submitted
     @PostMapping(value = "/api/auth/company/register",

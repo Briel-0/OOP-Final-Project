@@ -459,7 +459,12 @@
                                 <h2 style="font-size: 18px; font-weight: 700; color: #1a202c; margin-bottom: 20px;">Education information</h2>
                                 <div class="form-group">
                                     <label>Education Level</label>
-                                    <select id="educationSelect" class="form-input"></select>
+                                    <select id="educationSelect" class="form-input" onchange="updateProgramVisibility()"></select>
+                                </div>
+
+                                <div class="form-group" id="programGroup" style="display: none;">
+                                    <label>Course or program</label>
+                                    <select id="programSelect" class="form-input"></select>
                                 </div>
                             </div>
 
@@ -710,6 +715,7 @@
                     renderCheckboxes('ACCESSIBILITY', 'accessibilityCheckboxes');
                     renderCheckboxes('WORK_SETUP', 'workSetupCheckboxes');
                     renderEducationDropdown(labels);
+                    renderProgramDropdown(labels);
 
                     fetch('/api/locations')
                         .then(res => res.json())
@@ -747,6 +753,24 @@
             educations.forEach(e => {
                 select.innerHTML += `<option value="${e.rankOrder}">${e.name}</option>`;
             });
+        }
+
+        // Fills the program dropdown from the database
+        function renderProgramDropdown(labels) {
+            const select = document.getElementById('programSelect');
+            select.innerHTML = '<option value="">Select course or program</option>';
+            labels.filter(l => l.labelGroup === 'PROGRAM').forEach(p => {
+                select.innerHTML += `<option value="${p.name}">${p.name}</option>`;
+            });
+        }
+
+        // The program only shows for College level and higher
+        function updateProgramVisibility() {
+            const college = allLabelsData.find(l => l.labelGroup === 'EDUCATION' && l.name.startsWith('College level'));
+            const rank = parseInt(document.getElementById('educationSelect').value);
+            const show = college && rank >= college.rankOrder;
+            document.getElementById('programGroup').style.display = show ? 'block' : 'none';
+            if (!show) document.getElementById('programSelect').value = '';
         }
 
         function renderRegionDropdown() {
@@ -792,6 +816,8 @@
                 document.getElementById('profileEmailInput').value = profile.email;
             }
             if (profile.educationRank) document.getElementById('educationSelect').value = profile.educationRank;
+            if (profile.program) document.getElementById('programSelect').value = profile.program;
+            updateProgramVisibility();
             if (profile.experienceYears !== null) document.getElementById('experienceInput').value = profile.experienceYears;
             if (profile.otherNeeds) document.getElementById('otherNeedsInput').value = profile.otherNeeds;
 
@@ -826,6 +852,7 @@
                 fullName: document.getElementById('profileFullNameInput').value,
                 email: document.getElementById('profileEmailInput').value,
                 educationRank: document.getElementById('educationSelect').value ? parseInt(document.getElementById('educationSelect').value) : null,
+                program: document.getElementById('programSelect').value,
                 experienceYears: document.getElementById('experienceInput').value ? parseFloat(document.getElementById('experienceInput').value) : null,
                 region: document.getElementById('regionSelect').value,
                 province: document.getElementById('provinceSelect').value,

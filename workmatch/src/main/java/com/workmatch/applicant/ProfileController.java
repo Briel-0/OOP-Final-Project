@@ -41,6 +41,7 @@ public class ProfileController {
         dto.setProvince(applicant.getProvince());
         dto.setCity(applicant.getCity());
         dto.setOtherNeeds(applicant.getOtherNeeds());
+        dto.setProgram(applicant.getProgram());
         dto.setLabelIds(labelIds);
 
         return ResponseEntity.ok(dto);
@@ -64,6 +65,7 @@ public class ProfileController {
         applicant.setProvince(dto.getProvince());
         applicant.setCity(dto.getCity());
         applicant.setOtherNeeds(dto.getOtherNeeds());
+        applicant.setProgram(dto.getProgram());
         applicantRepository.save(applicant);
 
         // Save selected label checkboxes
@@ -86,6 +88,7 @@ public class ProfileController {
         private String province;
         private String city;
         private String otherNeeds;
+        private String program;
         private List<Long> labelIds;
 
         public String getFullName() { return fullName; }
@@ -104,6 +107,8 @@ public class ProfileController {
         public void setCity(String city) { this.city = city; }
         public String getOtherNeeds() { return otherNeeds; }
         public void setOtherNeeds(String otherNeeds) { this.otherNeeds = otherNeeds; }
+        public String getProgram() { return program; }
+        public void setProgram(String program) { this.program = program; }
         public List<Long> getLabelIds() { return labelIds; }
         public void setLabelIds(List<Long> labelIds) { this.labelIds = labelIds; }
     }

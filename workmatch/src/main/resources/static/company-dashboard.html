@@ -95,6 +95,13 @@
         .view-section { display: none; }
         .view-section.active-view { display: flex; flex-direction: column; gap: 24px; }
 
+        /* Candidate popup */
+        .cd-avatar { width: 48px; height: 48px; background: #115e59; color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+        .cd-applied { background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
+        .cd-chip { display: inline-block; background: #f0fdf4; border: 1px solid #dcfce7; color: #115e59; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; margin: 0 6px 6px 0; }
+        .cd-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; }
+        .cd-box-title { font-size: 10px; font-weight: 700; color: #115e59; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+
     </style>
 </head>
 <body>
@@ -112,9 +119,9 @@
                 </div>
 
                 <div class="company-badge-box">
-                    <div class="company-badge-icon">W4</div>
+                    <div class="company-badge-icon" id="sidebarCompanyIcon">--</div>
                     <div>
-                        <h4 style="font-size: 13px; color: #115e59; font-weight: 700;" id="sidebarCompanyName">Work4Us</h4>
+                        <h4 style="font-size: 13px; color: #115e59; font-weight: 700;" id="sidebarCompanyName">Loading...</h4>
                         <p style="font-size: 10px; color: #166534;">Verified company</p>
                     </div>
                 </div>
@@ -133,9 +140,9 @@
             </div>
 
             <div class="user-profile">
-                <div class="avatar">AR</div>
+                <div class="avatar" id="sidebarAvatar">--</div>
                 <div>
-                    <h4 style="font-size: 13px; color: #2d3748;">Work4Us Admin</h4>
+                    <h4 style="font-size: 13px; color: #2d3748;" id="sidebarAdminName">Loading...</h4>
                     <a href="/login.html" style="font-size: 11px; color: #718096; text-decoration: none;">Sign out</a>
                 </div>
             </div>
@@ -150,7 +157,7 @@
                     <span class="notification-badge"></span>
                 </div>
                 <div class="user-menu-container">
-                    <button class="avatar-circle" id="companyMenuBtn">AR</button>
+                    <button class="avatar-circle" id="companyMenuBtn">--</button>
                     <div class="dropdown-menu" id="companyDropdown">
                         <a href="/company/profile" class="dropdown-item">
                             <span>🏢</span> Company profile
@@ -217,10 +224,11 @@
                                 <th>Position</th>
                                 <th>Match</th>
                                 <th>Status</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="candidatesTableBody">
-                            <tr><td colspan="4" style="text-align:center; color:#718096;">No applicants yet.</td></tr>
+                            <tr><td colspan="5" style="text-align:center; color:#718096;">No applicants yet.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -322,6 +330,87 @@
                     <button type="submit" style="background: #115e59; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;">Publish job</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- CANDIDATE DETAILS POPUP -->
+    <div class="modal-overlay" id="candidateModal">
+        <div class="modal-card" style="width: 560px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="cd-avatar" id="cdAvatar">--</div>
+                    <div>
+                        <p style="font-size: 10px; font-weight: 700; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">Candidate profile</p>
+                        <h2 id="cdName" style="font-size: 20px; font-weight: 700; color: #1a202c;">Name</h2>
+                        <p id="cdEmail" style="font-size: 12px; color: #115e59;">Email</p>
+                    </div>
+                </div>
+                <span id="cdStatus" style="background:#f0fdf4; color:#115e59; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">Status</span>
+            </div>
+
+            <div class="cd-applied">
+                <div class="cd-box-title">Applied for</div>
+                <div id="cdJob" style="font-size: 18px; font-weight: 700; color: #115e59;"></div>
+                <div id="cdMatch" style="font-size: 12px; color: #166534; margin-top: 2px;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="form-group">
+                    <label>Education</label>
+                    <div id="cdEducation" style="font-size: 14px; font-weight: 600; color: #1a202c;"></div>
+                </div>
+                <div class="form-group">
+                    <label>Experience</label>
+                    <div id="cdExperience" style="font-size: 14px; font-weight: 600; color: #1a202c;"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Location</label>
+            <div id="cdLocation" style="font-size: 14px; font-weight: 600; color: #1a202c;"></div>
+            </div>
+            <div class="form-group">
+                <label>Skills</label>
+                <div id="cdSkills"></div>
+            </div>
+            <div class="form-group">
+                <label>Work setup preference</label>
+                <div id="cdWorkSetup" style="font-size: 14px; font-weight: 600; color: #1a202c;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="cd-box">
+                    <div class="cd-box-title">Accessibility needs</div>
+                    <div id="cdAccessibility" style="font-size: 13px; font-weight: 600; color: #1a202c;"></div>
+                </div>
+                <div class="cd-box">
+                    <div class="cd-box-title">Physical demands they cannot do</div>
+                    <div id="cdPhysical" style="font-size: 13px; font-weight: 600; color: #1a202c;"></div>
+                </div>
+            </div>
+            <div class="cd-box" style="margin-bottom: 20px;">
+                <div class="cd-box-title">Other needs</div>
+                <div id="cdOtherNeeds" style="font-size: 13px; font-weight: 600; color: #1a202c;"></div>
+            </div>
+
+            <div class="form-group" style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
+                <label>Change status</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="cdStatusSelect" class="form-input">
+                    <option value="">Choose a new status</option>
+                    <option value="Under review">Under review</option>
+                    <option value="Interview invited">Interview invited</option>
+                    <option value="Offer sent">Offer sent</option>
+                    <option value="Hired">Hired</option>
+                    <option value="Not selected">Not selected</option>
+                </select>
+                <button type="button" onclick="saveCandidateStatus()" style="background: #115e59; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">Save status</button>
+            </div>
+            <span id="cdStatusMsg" style="font-size: 12px; font-weight: 600;"></span>
+        </div>
+
+            <div style="display: flex; justify-content: flex-end; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                <button type="button" onclick="closeCandidateModal()" style="background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Close</button>
+            </div>
         </div>
     </div>
 
@@ -552,7 +641,7 @@
                     tbody.innerHTML = '';
 
                     if (!Array.isArray(apps) || apps.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#718096;">No applicants yet.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#718096;">No applicants yet.</td></tr>';
                         return;
                     }
 
@@ -568,16 +657,128 @@
                                 </td>
                                 <td>${a.jobTitle}</td>
                                 <td><strong style="color:#115e59;">${matchText}</strong></td>
-                                <td><span style="background:#f0fdf4; color:#115e59; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">${a.status || 'Submitted'}</span></td>
+                                <td><span style="background:#f0fdf4; color:#115e59; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">${a.status || 'Submitted'}</span></td>  
+                                <td><button type="button" onclick="openCandidateModal(${a.id}, ${a.score})" style="background:white; border:1px solid #115e59; color:#115e59; padding:6px 14px; border-radius:8px; font-weight:600; font-size:12px; cursor:pointer;">View</button></td>
                             </tr>
                         `;
                     });
                 });
         }
 
-        window.onload = function() {
+        // Fills the company name and initials from the logged-in session
+        function loadCompanyHeader() {
+            fetch('/api/company/me')
+                .then(res => {
+                    if (res.status === 401) {
+                        window.location.href = '/login.html';
+                        return null;
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    if (!data) return;
+                    const initials = getInitials(data.companyName);
+                    document.getElementById('sidebarCompanyName').innerText = data.companyName;
+                    document.getElementById('sidebarCompanyIcon').innerText = initials;
+                    document.getElementById('sidebarAdminName').innerText = data.companyName + ' Admin';
+                    document.getElementById('sidebarAvatar').innerText = initials;
+                    document.getElementById('companyMenuBtn').innerText = initials;
+                    // The job list needs the name first
+                    loadCompanyJobs();
+                });
+        }
+
+        // Turns a list into text, or says nothing is listed
+        function listText(items) {
+            return (items && items.length > 0) ? items.join(', ') : 'None listed';
+        }
+
+        let currentCandidateId = null;
+
+        // Opens the popup with one applicant's real details
+        function openCandidateModal(id, score) {
+            fetch('/api/company/applications/' + id)
+                .then(res => res.ok ? res.json() : null)
+                .then(d => {
+                    if (!d) {
+                        alert('Could not load the applicant details.');
+                        return;
+                    }
+
+                    currentCandidateId = id;
+                    document.getElementById('cdStatusSelect').value = '';
+                    document.getElementById('cdStatusMsg').innerText = '';
+                    document.getElementById('cdAvatar').innerText = getInitials(d.applicantName);
+                    document.getElementById('cdName').innerText = d.applicantName || 'Unknown';
+                    document.getElementById('cdEmail').innerText = d.applicantEmail || '';
+                    document.getElementById('cdStatus').innerText = d.status || 'Submitted';
+                    document.getElementById('cdJob').innerText = d.jobTitle || '';
+                    document.getElementById('cdMatch').innerText =
+                        (score !== null && score !== undefined) ? score + '% profile match' : '';
+                    document.getElementById('cdEducation').innerText =
+                        (d.education || 'Not provided') + (d.program ? ', ' + d.program : '');
+                    document.getElementById('cdExperience').innerText =
+                        (d.experienceYears !== null && d.experienceYears !== undefined) ? d.experienceYears + ' years' : 'Not provided';
+                    const place = [d.city, d.province].filter(p => p && p.length > 0).join(', ');
+                    document.getElementById('cdLocation').innerText = place || 'Not provided';
+
+                    // Skills as small chips
+                    const skillsBox = document.getElementById('cdSkills');
+                    skillsBox.innerHTML = '';
+                    if (d.skills && d.skills.length > 0) {
+                        d.skills.forEach(s => {
+                            const chip = document.createElement('span');
+                            chip.className = 'cd-chip';
+                            chip.innerText = s;
+                            skillsBox.appendChild(chip);
+                        });
+                    } else {
+                        skillsBox.innerText = 'None listed';
+                    }
+
+                    document.getElementById('cdWorkSetup').innerText =
+                        (d.workSetup && d.workSetup.length > 0) ? d.workSetup.join(' · ') : 'None listed';
+                    document.getElementById('cdAccessibility').innerText = listText(d.accessibilityNeeds);
+                    document.getElementById('cdPhysical').innerText = listText(d.physicalLimits);
+                    document.getElementById('cdOtherNeeds').innerText = d.otherNeeds || 'None listed';
+                    document.getElementById('candidateModal').style.display = 'flex';
+                });
+        }
+
+        function closeCandidateModal() {
+            document.getElementById('candidateModal').style.display = 'none';
+        }
+
+        // Saves the new status picked in the popup
+        function saveCandidateStatus() {
+            const newStatus = document.getElementById('cdStatusSelect').value;
+            const msg = document.getElementById('cdStatusMsg');
+            if (!newStatus) {
+                msg.style.color = '#b91c1c';
+                msg.innerText = 'Please choose a status first.';
+                return;
+            }
+            fetch('/api/company/applications/' + currentCandidateId + '/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(res => {
+                if (res.ok) {
+                    msg.style.color = '#15803d';
+                    msg.innerText = '✓ Status updated';
+                    document.getElementById('cdStatus').innerText = newStatus;
+                    loadCandidates();
+                } else {
+                    msg.style.color = '#b91c1c';
+                    msg.innerText = 'Could not update the status.';
+                }
+            });
+        }
+
+            window.onload = function() {
             loadMetaData();
-            loadCompanyJobs();
+            loadCompanyHeader();
         };
     </script>
 </body>

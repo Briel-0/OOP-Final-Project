@@ -104,7 +104,7 @@ public class ApplicantController {
         app.setApplicantId(applicantId);
         app.setJobTitle(jobTitle);
         app.setCompany(company);
-        app.setStatus("Under review");
+        app.setStatus("Submitted");
         app.setAppliedOn("Oct 11, 2026");
         return ResponseEntity.ok(applicationRepository.save(app));
     }
@@ -173,7 +173,18 @@ public class ApplicantController {
         if (hasText(fullName) && !fullName.equals("New Applicant")) done++;
         if (hasText(email)) done++;
         if (hasText(applicant.getRegion()) && hasText(applicant.getProvince()) && hasText(applicant.getCity())) done++;
-        if (applicant.getEducationRank() != null) done++;
+        // Education counts as done; College level and higher also need a program
+        boolean educationDone = applicant.getEducationRank() != null;
+        if (educationDone) {
+            for (Label l : labelRepository.findAll()) {
+                if ("EDUCATION".equals(l.getLabelGroup()) && l.getName().startsWith("College level")
+                        && applicant.getEducationRank() >= l.getRankOrder()
+                        && !hasText(applicant.getProgram())) {
+                    educationDone = false;
+                }
+            }
+        }
+        if (educationDone) done++;
         if (applicant.getExperienceYears() != null) done++;
         if (hasSkill) done++;
         if (hasWorkSetup) done++;
