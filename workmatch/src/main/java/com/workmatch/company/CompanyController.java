@@ -334,13 +334,15 @@ public class CompanyController {
     public ResponseEntity<?> loginCompany(@RequestBody CompanyDto dto, HttpSession session) {
         Optional<Company> company = companyRepository.findByEmail(dto.getEmail());
         if (company.isPresent() && company.get().getPassword().equals(dto.getPassword())) {
+            // Forget any applicant that was logged in before
+            session.removeAttribute("applicantEmail");
+            session.removeAttribute("applicantId");
             session.setAttribute("companyEmail", company.get().getEmail());
             session.setAttribute("companyName", company.get().getCompanyName());
             return ResponseEntity.ok().body("/company-dashboard.html?companyId=" + company.get().getId());
         }
         return ResponseEntity.status(401).body("Invalid credentials");
     }
-
     @PostMapping("/company/api/jobs")
     @ResponseBody
     public com.workmatch.job.Job postJob(@RequestBody com.workmatch.job.Job job) {

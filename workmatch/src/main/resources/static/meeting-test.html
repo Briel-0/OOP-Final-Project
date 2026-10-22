@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Jitsi embed test</title>
+</head>
+<body style="margin:0;">
+    <!-- The video room will appear inside this box -->
+    <div id="meet" style="width:100vw; height:100vh;"></div>
+
+    <script src="https://8x8.vc/vpaas-magic-cookie-384d489b6cf14b579942cacdde50c945/external_api.js"></script>
+    <script>
+        // Opens a test room on our JaaS account, inside this page
+        const api = new JitsiMeetExternalAPI('8x8.vc', {
+            roomName: 'vpaas-magic-cookie-384d489b6cf14b579942cacdde50c945/WorkMatchTestRoom48291',
+            parentNode: document.getElementById('meet'),
+            userInfo: { displayName: 'Test User' }
+        });
+    </script>
+</body>
+</html>

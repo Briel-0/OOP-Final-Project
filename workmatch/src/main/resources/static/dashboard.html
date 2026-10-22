@@ -1333,8 +1333,48 @@
                     label.innerText = 'Replaced by a newer time';
                 }
                 card.appendChild(label);
+                // A confirmed card also gets the Join Meeting button
+                if (m.cardStatus === 'Confirmed') {
+                    card.appendChild(buildJoinButton(m.applicationId));
+                }
             }
             return card;
+        }
+
+        // Join Meeting button for a confirmed card, opens 5 minutes before the interview
+        function buildJoinButton(applicationId) {
+            const join = document.createElement('button');
+            join.type = 'button';
+            join.className = 'btn-purple cardJoinBtn';
+            join.style.marginTop = '10px';
+            join.style.opacity = '0.4';
+            join.style.cursor = 'not-allowed';
+            join.disabled = true;
+            join.innerText = 'Join Meeting';
+            join.onclick = function() { window.location.href = '/meeting.html?id=' + applicationId; };
+            // Ask the server for the interview times
+            fetch('/api/meeting/' + applicationId)
+                .then(res => res.ok ? res.json() : null)
+                .then(d => {
+                    if (!d) return;
+                    join.dataset.opens = new Date(d.opensAt).getTime();
+                    join.dataset.ends = new Date(d.endsAt).getTime();
+                    refreshCardJoinButtons();
+                });
+            return join;
+        }
+
+        // Turns the card buttons on or off depending on the time
+        function refreshCardJoinButtons() {
+            const now = Date.now();
+            document.querySelectorAll('.cardJoinBtn').forEach(btn => {
+                if (!btn.dataset.opens) return;
+                const open = now >= Number(btn.dataset.opens) && now < Number(btn.dataset.ends);
+                btn.disabled = !open;
+                btn.style.opacity = open ? '1' : '0.4';
+                btn.style.cursor = open ? 'pointer' : 'not-allowed';
+                btn.title = open ? '' : 'Opens 5 minutes before the interview';
+            });
         }
 
         // Sends Confirm or Can't make it for one card
@@ -1398,6 +1438,8 @@
         window.onload = function() {
             loadHeader();
             loadData();
+            // Check every 15 seconds so the Join Meeting button turns on by itself
+            setInterval(refreshCardJoinButtons, 15000);
         };
     </script>
 </body>

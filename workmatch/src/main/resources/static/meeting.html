@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorkMatch Meet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        html, body { width: 100%; height: 100%; background: #0f1b18; color: #e5efec; overflow: hidden; }
+        .page { display: flex; flex-direction: column; height: 100vh; }
+
+        .topbar { height: 64px; min-height: 64px; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; border-bottom: 1px solid #1f322d; }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-icon { width: 38px; height: 38px; background: #1b6b57; border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 18px; }
+        .brand h1 { font-size: 14px; font-weight: 700; }
+        .brand p { font-size: 10px; color: #8aa59d; }
+        .secure { font-size: 12px; color: #8aa59d; }
+        .live { font-size: 12px; color: #cfe3dc; display: flex; align-items: center; gap: 8px; }
+        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; }
+
+        .main { flex: 1; display: flex; min-height: 0; }
+        .video-area { flex: 1; position: relative; padding: 16px; min-width: 0; }
+        #meet { width: 100%; height: 100%; border-radius: 16px; overflow: hidden; background: #14251f; }
+        .locked-box { position: absolute; top: 16px; left: 16px; right: 16px; bottom: 16px; border-radius: 16px; background: #14251f; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 10px; padding: 24px; z-index: 5; }
+        .locked-box h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 600; }
+        .locked-box p { font-size: 13px; color: #8aa59d; max-width: 420px; }
+
+        .side { width: 320px; min-width: 320px; border-left: 1px solid #1f322d; padding: 24px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+        .side-label { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; color: #8aa59d; }
+        .side h2 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; }
+        .divider { border-top: 1px solid #1f322d; }
+        .person { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; background: #d9efe6; color: #14532d; display: flex; justify-content: center; align-items: center; font-size: 12px; font-weight: 700; }
+        .person-name { font-size: 13px; font-weight: 600; }
+        .person-role { font-size: 10px; color: #8aa59d; }
+        .time-text { font-size: 12px; color: #8aa59d; }
+        .notes { width: 100%; flex: 1; min-height: 110px; background: #14251f; border: 1px solid #1f322d; border-radius: 8px; color: #e5efec; padding: 10px; font-size: 12px; resize: none; outline: none; }
+
+        .controls { height: 80px; min-height: 80px; border-top: 1px solid #1f322d; display: flex; justify-content: center; align-items: center; gap: 20px; position: relative; }
+        .ctrl { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; color: #cfe3dc; font-size: 10px; cursor: pointer; }
+        .ctrl-circle { width: 44px; height: 44px; border-radius: 50%; background: #1f322d; display: flex; justify-content: center; align-items: center; font-size: 16px; }
+        .ctrl.off .ctrl-circle { background: #7f1d1d; }
+        .btn-leave { position: absolute; right: 24px; background: #b91c1c; color: white; border: none; padding: 12px 22px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="topbar">
+            <div class="brand">
+                <div class="brand-icon">🎥</div>
+                <div>
+                    <h1>WorkMatch Meet</h1>
+                    <p>Built-in secure interview</p>
+                </div>
+            </div>
+            <div class="secure">🛡 Encrypted in-app session</div>
+            <div class="live"><span class="live-dot"></span><span id="liveText">Loading...</span></div>
+        </div>
+
+        <div class="main">
+            <div class="video-area">
+                <div id="meet"></div>
+                <div class="locked-box" id="lockedBox">
+                    <h2 id="lockedTitle">Loading...</h2>
+                    <p id="lockedText"></p>
+                </div>
+            </div>
+
+            <div class="side">
+                <div class="side-label">Interview details</div>
+                <h2 id="jobTitle">Position</h2>
+                <div class="time-text" id="timeText"></div>
+                <div class="divider"></div>
+                <div class="person">
+                    <div class="avatar" id="avatar1">--</div>
+                    <div>
+                        <div class="person-name" id="name1"></div>
+                        <div class="person-role" id="role1"></div>
+                    </div>
+                </div>
+                <div class="person">
+                    <div class="avatar" id="avatar2">--</div>
+                    <div>
+                        <div class="person-name" id="name2"></div>
+                        <div class="person-role" id="role2"></div>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="side-label">Private interview notes</div>
+                <textarea class="notes" placeholder="Write notes visible only to you..."></textarea>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button type="button" class="ctrl" id="btnMic" onclick="toggleMic()">
+                <span class="ctrl-circle">🎤</span>Mute
+            </button>
+            <button type="button" class="ctrl" id="btnCam" onclick="toggleCam()">
+                <span class="ctrl-circle">📹</span>Stop video
+            </button>
+            <button type="button" class="ctrl" onclick="toggleCaptions()">
+                <span class="ctrl-circle" style="font-size:12px; font-weight:700;">CC</span>Captions
+            </button>
+            <button type="button" class="btn-leave" onclick="leaveRoom()">Leave room</button>
+        </div>
+    </div>
+
+    <script>
+        let meetingApi = null;
+        let backUrl = '/login.html';
+        let endsAt = null;
+        let timerId = null;
+        const applicationId = new URLSearchParams(window.location.search).get('id');
+
+        // Two letters for the round avatar
+        function getInitials(name) {
+            if (!name) return '--';
+            const parts = name.trim().split(/\s+/);
+            if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+            return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+        }
+
+        // Shows a message on top of the video area
+        function showLocked(title, text) {
+            document.getElementById('lockedBox').style.display = 'flex';
+            document.getElementById('lockedTitle').innerText = title;
+            document.getElementById('lockedText').innerText = text;
+        }
+
+        // Fills the interview details panel from the server answer
+        function fillDetails(d) {
+            const isApplicant = d.role === 'APPLICANT';
+            document.getElementById('jobTitle').innerText = d.jobTitle || '';
+            document.getElementById('timeText').innerText =
+                d.startsAt.replace('T', ' ').substring(0, 16) + ' to ' + d.endsAt.substring(11, 16);
+            document.getElementById('avatar1').innerText = getInitials(d.applicantName);
+            document.getElementById('name1').innerText = d.applicantName;
+            document.getElementById('role1').innerText = isApplicant ? 'Candidate · You' : 'Candidate';
+            document.getElementById('avatar2').innerText = getInitials(d.companyName);
+            document.getElementById('name2').innerText = d.companyName;
+            document.getElementById('role2').innerText = isApplicant ? 'Interviewer' : 'Interviewer · You';
+        }
+
+        // Shows the time left until the interview ends
+        function updateTimer() {
+            const left = new Date(endsAt) - new Date();
+            const live = document.getElementById('liveText');
+            if (left <= 0) {
+                live.innerText = 'Interview time is over';
+                return;
+            }
+            const totalSeconds = Math.floor(left / 1000);
+            const mm = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+            const ss = String(totalSeconds % 60).padStart(2, '0');
+            live.innerText = 'Interview live · ' + mm + ':' + ss + ' left';
+        }
+
+        // Asks the server if this person may join now
+        function loadMeeting() {
+            if (!applicationId) {
+                showLocked('No interview chosen', 'Open this page from the Join Meeting button.');
+                return;
+            }
+            fetch('/api/meeting/' + applicationId)
+                .then(res => {
+                    if (res.status === 401) {
+                        window.location.href = '/login.html';
+                        return null;
+                    }
+                    if (!res.ok) {
+                        return res.text().then(t => {
+                            showLocked('Cannot open this meeting', t);
+                            return null;
+                        });
+                    }
+                    return res.json();
+                })
+                .then(d => {
+                    if (!d) return;
+                    fillDetails(d);
+                    backUrl = d.role === 'COMPANY' ? '/company-dashboard.html' : '/dashboard.html';
+                    endsAt = d.endsAt;
+                    if (!d.open) {
+                        document.getElementById('liveText').innerText = 'Room not open yet';
+                        showLocked('The room is not open yet',
+                            'It opens at ' + d.opensAt.replace('T', ' ').substring(0, 16) + '. This page checks again every 20 seconds.');
+                        setTimeout(loadMeeting, 20000);
+                        return;
+                    }
+                    startMeeting(d);
+                });
+        }
+
+        // Loads Jitsi and opens the room inside the box
+        function startMeeting(d) {
+            const script = document.createElement('script');
+            script.src = 'https://8x8.vc/' + d.appId + '/external_api.js';
+            script.onload = function() {
+                document.getElementById('lockedBox').style.display = 'none';
+                meetingApi = new JitsiMeetExternalAPI('8x8.vc', {
+                    roomName: d.appId + '/' + d.roomName,
+                    parentNode: document.getElementById('meet'),
+                    userInfo: { displayName: d.displayName },
+                    // Hide Jitsi's own button bar, we use ours
+                    configOverwrite: { toolbarButtons: [] }
+                });
+                meetingApi.addListener('audioMuteStatusChanged', e => {
+                    document.getElementById('btnMic').classList.toggle('off', e.muted);
+                });
+                meetingApi.addListener('videoMuteStatusChanged', e => {
+                    document.getElementById('btnCam').classList.toggle('off', e.muted);
+                });
+                updateTimer();
+                timerId = setInterval(updateTimer, 1000);
+            };
+            script.onerror = function() {
+                showLocked('Could not load the video room', 'Check your internet connection and reload this page.');
+            };
+            document.body.appendChild(script);
+        }
+
+        function toggleMic() { if (meetingApi) meetingApi.executeCommand('toggleAudio'); }
+        function toggleCam() { if (meetingApi) meetingApi.executeCommand('toggleVideo'); }
+        function toggleCaptions() { if (meetingApi) meetingApi.executeCommand('toggleSubtitles'); }
+
+        function leaveRoom() {
+            if (timerId) clearInterval(timerId);
+            if (meetingApi) meetingApi.dispose();
+            window.location.href = backUrl;
+        }
+
+        window.onload = loadMeeting;
+    </script>
+</body>
+</html>

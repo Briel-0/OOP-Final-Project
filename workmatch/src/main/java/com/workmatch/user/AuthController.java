@@ -59,6 +59,9 @@ public class AuthController {
             Applicant applicant = applicantRepository.findFirstByEmail(email);
             if (applicant != null && applicant.getPassword() != null
                     && applicant.getPassword().equals(password)) {
+                // Forget any company that was logged in before
+                session.removeAttribute("companyEmail");
+                session.removeAttribute("companyName");
                 session.setAttribute("applicantEmail", applicant.getEmail());
                 session.setAttribute("applicantId", applicant.getId());
                 return ResponseEntity.ok().body("/dashboard.html");

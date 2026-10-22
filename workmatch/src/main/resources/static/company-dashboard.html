@@ -818,10 +818,40 @@
                         btn.innerText = i.scheduledAt ? 'Reschedule interview' : 'View details';
                         btn.onclick = function() { openScheduleModal(i); };
                         tr.children[4].appendChild(btn);
+
+                        // Join Meeting button: opens 30 minutes before, closes when the interview ends
+                        if (i.scheduledAt) {
+                            const start = new Date(i.scheduledAt).getTime();
+                            const join = document.createElement('button');
+                            join.type = 'button';
+                            join.className = 'joinBtn';
+                            join.innerText = 'Join Meeting';
+                            join.dataset.opens = start - 30 * 60000;
+                            join.dataset.ends = start + i.durationMinutes * 60000;
+                            join.dataset.confirmed = (i.status === 'Interview scheduled') ? 'yes' : 'no';
+                            join.onclick = function() { window.location.href = '/meeting.html?id=' + i.applicationId; };
+                            tr.children[4].appendChild(join);
+                        }
                         tbody.appendChild(tr);
                     });
+                    refreshJoinButtons();
                 });
         }
+
+        // Turns the Join Meeting buttons on or off depending on the time
+        function refreshJoinButtons() {
+            const now = Date.now();
+            document.querySelectorAll('.joinBtn').forEach(btn => {
+                const confirmed = btn.dataset.confirmed === 'yes';
+                const open = confirmed && now >= Number(btn.dataset.opens) && now < Number(btn.dataset.ends);
+                btn.disabled = !open;
+                btn.title = open ? '' : (confirmed ? 'Opens 30 minutes before the interview' : 'Waiting for the applicant to confirm the time');
+                btn.style.cssText = 'margin-left:8px; padding:6px 14px; border-radius:8px; font-weight:600; font-size:12px; border:none; color:white; background:'
+                    + (open ? '#115e59; cursor:pointer;' : '#cbd5e1; cursor:not-allowed;');
+            });
+        }
+        // Check again every 15 seconds so the button turns on by itself
+        setInterval(refreshJoinButtons, 15000);
 
         // Opens the popup for one applicant
         function openScheduleModal(i) {
