@@ -256,52 +256,23 @@ public class MessageController {
             return ResponseEntity.badRequest().body("This offer can no longer be declined.");
         }
 
-        a.setStatus("Not selected");
-        a.setRejectionReason("Applicant declined the offer");
-        applicationRepository.save(a);
-        card.setCardStatus("Declined");
-        messageRepository.save(card);
-        return ResponseEntity.ok().body("Offer declined");
-    }
+    a.setStatus("Not selected");
+    a.setRejectionReason("Applicant declined the offer");
+    applicationRepository.save(a);
+    card.setCardStatus("Declined");
+    messageRepository.save(card);
 
-    // ---------- COMPANY SIDE ----------
+    // Tell the company the applicant declined the offer
+    Applicant applicant = applicantRepository.findById(applicantId).orElse(null);
+    String name = applicant != null ? applicant.getFullName() : "An applicant";
+    notificationService.notifyCompany(
+            a.getCompany(),
+            "Offer declined",
+            name + " declined your offer for " + a.getJobTitle(),
+            "candidates");
 
-    // Applicants who applied to this company
-    @GetMapping("/company/conversations")
-    public ResponseEntity<?> companyConversations(HttpSession session) {
-        String companyName = (String) session.getAttribute("companyName");
-        if (companyName == null) {
-            return ResponseEntity.status(401).body("Please log in first.");
-        }
-        Set<Long> applicantIds = new LinkedHashSet<>();
-        for (Application a : applicationRepository.findByCompany(companyName)) {
-            if (a.getApplicantId() != null) applicantIds.add(a.getApplicantId());
-        }
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Long id : applicantIds) {
-            Applicant applicant = applicantRepository.findById(id).orElse(null);
-            String name = applicant != null ? applicant.getFullName() : "Unknown";
-            List<Message> chat = messageRepository
-                    .findByApplicantIdAndCompanyNameOrderBySentAtAsc(id, companyName);
-            Map<String, Object> row = buildRow(name, chat, "APPLICANT");
-            row.put("applicantId", id);
-            result.add(row);
-        }
-        return ResponseEntity.ok(result);
-    }
-
-    // The chat with one applicant
-    @GetMapping("/company/messages")
-    public ResponseEntity<?> companyMessages(@RequestParam Long applicantId, HttpSession session) {
-        String companyName = (String) session.getAttribute("companyName");
-        if (companyName == null) {
-            return ResponseEntity.status(401).body("Please log in first.");
-        }
-        if (!hasApplied(applicantId, companyName)) {
-            return ResponseEntity.status(403).body("This applicant has not applied to your jobs.");
-        }
-        return ResponseEntity.ok(openChat(applicantId, companyName, "APPLICANT"));
-    }
+    return ResponseEntity.ok().body("Offer declined");
+}
 
     // Company sends a message to an applicant
     @PostMapping("/company/send")
