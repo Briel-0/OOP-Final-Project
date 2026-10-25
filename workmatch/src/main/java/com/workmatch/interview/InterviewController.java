@@ -141,4 +141,56 @@ public class InterviewController {
 
         return ResponseEntity.ok().body("Interview scheduled");
     }
+
+    // Company sends a job offer after the interview time has passed
+    @PostMapping("/{applicationId}/offer")
+    public ResponseEntity<?> sendOffer(@PathVariable Long applicationId, HttpSession session) {
+        String companyName = (String) session.getAttribute("companyName");
+        if (companyName == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+
+        // The application must exist and belong to this company
+        Application a = applicationRepository.findById(applicationId).orElse(null);
+        if (a == null || !companyName.equals(a.getCompany())) {
+            return ResponseEntity.status(404).body("Application not found.");
+        }
+
+        // Only an applicant whose interview time was confirmed can get an offer
+        if (!"Interview scheduled".equals(a.getStatus())) {
+            return ResponseEntity.badRequest().body("Only a confirmed interview can get an offer.");
+        }
+
+        // The interview must be over
+        Interview interview = interviewRepository.findFirstByApplicationId(applicationId).orElse(null);
+        if (interview == null || interview.getScheduledAt() == null) {
+            return ResponseEntity.badRequest().body("No interview time is set.");
+        }
+        LocalDateTime end = interview.getScheduledAt().plusMinutes(interview.getDurationMinutes());
+        if (LocalDateTime.now().isBefore(end)) {
+            return ResponseEntity.badRequest().body("The interview has not ended yet.");
+        }
+
+        a.setStatus("Offer sent");
+        applicationRepository.save(a);
+
+        // Send the offer to the applicant as a card in Messages
+        if (a.getApplicantId() != null) {
+            Message card = new Message();
+            card.setApplicantId(a.getApplicantId());
+            card.setCompanyName(a.getCompany());
+            card.setSenderRole("COMPANY");
+            card.setSenderName(a.getCompany());
+            card.setMessageType("OFFER");
+            card.setApplicationId(applicationId);
+            card.setCardStatus("Pending");
+            card.setMessageText("Job offer for " + a.getJobTitle() + " at " + a.getCompany());
+            card.setSentAt(LocalDateTime.now());
+            card.setCreatedAt(LocalDateTime.now().toString());
+            card.setIsRead(false);
+            messageRepository.save(card);
+        }
+
+        return ResponseEntity.ok().body("Offer sent");
+    }
 }

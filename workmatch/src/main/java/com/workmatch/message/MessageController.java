@@ -191,6 +191,79 @@ public class MessageController {
         return ResponseEntity.ok().body("Marked as can't make it");
     }
 
+        // Applicant accepts the job offer on an offer card
+    @PostMapping("/applicant/offer/{messageId}/accept")
+    public ResponseEntity<?> acceptOffer(@PathVariable Long messageId, HttpSession session) {
+        Long applicantId = (Long) session.getAttribute("applicantId");
+        if (applicantId == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        Message card = messageRepository.findById(messageId).orElse(null);
+        if (card == null || !applicantId.equals(card.getApplicantId()) || !"OFFER".equals(card.getMessageType())) {
+            return ResponseEntity.status(404).body("Offer not found.");
+        }
+        if (!"Pending".equals(card.getCardStatus())) {
+            return ResponseEntity.badRequest().body("This offer is no longer open.");
+        }
+        Application a = applicationRepository.findById(card.getApplicationId()).orElse(null);
+        if (a == null || !"Offer sent".equals(a.getStatus())) {
+            return ResponseEntity.badRequest().body("This offer can no longer be accepted.");
+        }
+
+        // The applicant is hired
+        a.setStatus("Hired");
+        applicationRepository.save(a);
+        card.setCardStatus("Accepted");
+        messageRepository.save(card);
+
+        // One hire per job: every other open applicant on the same job is Not selected
+        for (Application other : applicationRepository.findByCompany(a.getCompany())) {
+            if (other.getId().equals(a.getId())) continue;
+            if ("Hired".equals(other.getStatus()) || "Not selected".equals(other.getStatus())) continue;
+
+            // Use the job id when both rows have one, otherwise the job title
+            boolean sameJob;
+            if (a.getJobId() != null && other.getJobId() != null) {
+                sameJob = a.getJobId().equals(other.getJobId());
+            } else {
+                sameJob = a.getJobTitle() != null && a.getJobTitle().equals(other.getJobTitle());
+            }
+            if (sameJob) {
+                other.setStatus("Not selected");
+                other.setRejectionReason("Position has been filled");
+                applicationRepository.save(other);
+            }
+        }
+        return ResponseEntity.ok().body("Offer accepted");
+    }
+
+    // Applicant declines the job offer
+    @PostMapping("/applicant/offer/{messageId}/decline")
+    public ResponseEntity<?> declineOffer(@PathVariable Long messageId, HttpSession session) {
+        Long applicantId = (Long) session.getAttribute("applicantId");
+        if (applicantId == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        Message card = messageRepository.findById(messageId).orElse(null);
+        if (card == null || !applicantId.equals(card.getApplicantId()) || !"OFFER".equals(card.getMessageType())) {
+            return ResponseEntity.status(404).body("Offer not found.");
+        }
+        if (!"Pending".equals(card.getCardStatus())) {
+            return ResponseEntity.badRequest().body("This offer is no longer open.");
+        }
+        Application a = applicationRepository.findById(card.getApplicationId()).orElse(null);
+        if (a == null || !"Offer sent".equals(a.getStatus())) {
+            return ResponseEntity.badRequest().body("This offer can no longer be declined.");
+        }
+
+        a.setStatus("Not selected");
+        a.setRejectionReason("Applicant declined the offer");
+        applicationRepository.save(a);
+        card.setCardStatus("Declined");
+        messageRepository.save(card);
+        return ResponseEntity.ok().body("Offer declined");
+    }
+
     // ---------- COMPANY SIDE ----------
 
     // Applicants who applied to this company

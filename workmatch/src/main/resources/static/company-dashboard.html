@@ -479,6 +479,16 @@
                     <option value="60">60 minutes</option>
                 </select>
             </div>
+
+                        <div id="schAfterBox" style="display: none; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-bottom: 12px;">
+                <label style="display:block; font-size:11px; font-weight:700; color:#718096; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.5px;">After the interview</label>
+                <button type="button" onclick="sendOfferNow()" style="background: #115e59; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 12px;">Send offer</button>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="schReasonSelect" class="form-input"></select>
+                    <button type="button" onclick="notSelectedNow()" style="background: #b91c1c; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap;">Not selected</button>
+                </div>
+            </div>
+
             <span id="schMsg" style="display: block; font-size: 12px; font-weight: 600; margin-bottom: 12px;"></span>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
@@ -859,6 +869,7 @@
             document.getElementById('schName').innerText = i.applicantName;
             document.getElementById('schJob').innerText = i.jobTitle;
             document.getElementById('schMsg').innerText = '';
+            showAfterInterview(i);
             if (i.scheduledAt) {
                 document.getElementById('schDate').value = i.scheduledAt.substring(0, 10);
                 document.getElementById('schTime').value = i.scheduledAt.substring(11, 16);
@@ -873,6 +884,67 @@
 
         function closeScheduleModal() {
             document.getElementById('scheduleModal').style.display = 'none';
+        }
+
+        // Shows Send offer and Not selected only when the confirmed interview has ended
+        function showAfterInterview(i) {
+            let over = false;
+            if (i.status === 'Interview scheduled' && i.scheduledAt) {
+                const end = new Date(i.scheduledAt).getTime() + i.durationMinutes * 60000;
+                over = Date.now() >= end;
+            }
+            document.getElementById('schAfterBox').style.display = over ? 'block' : 'none';
+
+            // Fill the reasons from the database
+            const select = document.getElementById('schReasonSelect');
+            select.innerHTML = '<option value="">Choose a reason</option>';
+            allLabelsData
+                .filter(l => l.labelGroup === 'REJECTION_REASON')
+                .sort((a, b) => a.rankOrder - b.rankOrder)
+                .forEach(l => {
+                    const opt = document.createElement('option');
+                    opt.value = l.name;
+                    opt.innerText = l.name;
+                    select.appendChild(opt);
+                });
+        }
+
+        // Send offer: status becomes Offer sent and the applicant gets a card
+        function sendOfferNow() {
+            const msg = document.getElementById('schMsg');
+            fetch('/api/company/interviews/' + currentInterviewAppId + '/offer', { method: 'POST' })
+            .then(res => {
+                if (res.ok) {
+                    closeScheduleModal();
+                    loadInterviews();
+                } else {
+                    res.text().then(t => { msg.style.color = '#b91c1c'; msg.innerText = t; });
+                }
+            });
+        }
+
+        // Not selected: needs a reason, uses the reject endpoint
+        function notSelectedNow() {
+            const msg = document.getElementById('schMsg');
+            const reason = document.getElementById('schReasonSelect').value;
+            if (!reason) {
+                msg.style.color = '#b91c1c';
+                msg.innerText = 'Please choose a reason first.';
+                return;
+            }
+            fetch('/api/company/applications/' + currentInterviewAppId + '/reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(res => {
+                if (res.ok) {
+                    closeScheduleModal();
+                    loadInterviews();
+                } else {
+                    res.text().then(t => { msg.style.color = '#b91c1c'; msg.innerText = t; });
+                }
+            });
         }
 
         // Saves the date, time and length

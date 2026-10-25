@@ -94,6 +94,13 @@ public class ApplicantController {
             }
         }
 
+        // One hire per job: refuse new applications once someone is hired
+        for (Application h : applicationRepository.findByCompany(company)) {
+            if ("Hired".equals(h.getStatus()) && jobTitle.equals(h.getJobTitle())) {
+                return ResponseEntity.status(400).body("This position has been filled.");
+            }
+        }
+
         // Only look at this applicant's own applications
         List<Application> existing = applicationRepository.findByApplicantId(applicantId);
         for (Application a : existing) {
