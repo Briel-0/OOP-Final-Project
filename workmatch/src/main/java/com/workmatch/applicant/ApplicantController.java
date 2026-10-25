@@ -1,21 +1,30 @@
 package com.workmatch.applicant;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.workmatch.Label;
+import com.workmatch.LabelRepository;
 import com.workmatch.job.Job;
 import com.workmatch.job.JobRepository;
 import com.workmatch.message.Message;
 import com.workmatch.message.MessageRepository;
 import com.workmatch.notification.Notification;
 import com.workmatch.notification.NotificationRepository;
-import com.workmatch.Label;
-import com.workmatch.LabelRepository;
+import com.workmatch.notification.NotificationService;
 
 import jakarta.servlet.http.HttpSession;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
-import java.time.LocalDate;
-
-import java.util.*;
 
 @Controller
 public class ApplicantController {
@@ -27,6 +36,7 @@ public class ApplicantController {
     private final ApplicantRepository applicantRepository;
     private final ApplicantLabelRepository applicantLabelRepository;
     private final LabelRepository labelRepository;
+    private final NotificationService notificationService;
 
     public ApplicantController(JobRepository jobRepository,
                             JobApplicationRepository applicationRepository,
@@ -34,7 +44,8 @@ public class ApplicantController {
                             NotificationRepository notificationRepository,
                             ApplicantRepository applicantRepository,
                             ApplicantLabelRepository applicantLabelRepository,
-                            LabelRepository labelRepository) {
+                            LabelRepository labelRepository,
+                            NotificationService notificationService) {
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
         this.messageRepository = messageRepository;
@@ -42,6 +53,7 @@ public class ApplicantController {
         this.applicantRepository = applicantRepository;
         this.applicantLabelRepository = applicantLabelRepository;
         this.labelRepository = labelRepository;
+        this.notificationService = notificationService;
     }
 
     // True when a text has something written in it
@@ -116,8 +128,19 @@ public class ApplicantController {
         app.setCompany(company);
         app.setStatus("Submitted");
         app.setAppliedOn("Oct 11, 2026");
-        return ResponseEntity.ok(applicationRepository.save(app));
-    }
+        Application saved = applicationRepository.save(app);
+
+        // Tell the company a new application came in
+        Applicant applicant = applicantRepository.findById(applicantId).orElse(null);
+        String name = applicant != null ? applicant.getFullName() : "An applicant";
+        notificationService.notifyCompany(
+                company,
+                "New application received",
+                name + " applied for " + jobTitle,
+                "candidates");
+
+        return ResponseEntity.ok(saved);
+        }
 
     @GetMapping("/api/applications")
     @ResponseBody

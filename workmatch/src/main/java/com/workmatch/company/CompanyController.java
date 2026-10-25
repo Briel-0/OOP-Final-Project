@@ -14,6 +14,7 @@ import com.workmatch.job.JobLabelRepository;
 import com.workmatch.matching.MatchingService;
 import com.workmatch.notification.Notification;
 import com.workmatch.notification.NotificationRepository;
+import com.workmatch.notification.NotificationService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ public class CompanyController {
     private final JobLabelRepository jobLabelRepository;
     private final MatchingService matchingService;
     private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     public CompanyController(CompanyRepository companyRepository,
                             com.workmatch.job.JobRepository jobRepository,
@@ -46,7 +48,8 @@ public class CompanyController {
                             ApplicantLabelRepository applicantLabelRepository,
                             JobLabelRepository jobLabelRepository,
                             MatchingService matchingService,
-                            NotificationRepository notificationRepository) {
+                            NotificationRepository notificationRepository,
+                            NotificationService notificationService) {
         this.companyRepository = companyRepository;
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
@@ -56,6 +59,7 @@ public class CompanyController {
         this.jobLabelRepository = jobLabelRepository;
         this.matchingService = matchingService;
         this.notificationRepository = notificationRepository;
+        this.notificationService = notificationService;
     }
 
     @GetMapping("/company/api/{id}")
@@ -290,6 +294,14 @@ public class CompanyController {
 
             a.setStatus("Interview invited");
             applicationRepository.save(a);
+
+            // Tell the applicant they were invited to an interview
+            notificationService.notifyApplicant(
+                    a.getApplicantId(),
+                    "You were invited to an interview",
+                    a.getCompany() + " accepted your application for " + a.getJobTitle(),
+                    "applications");
+
             return ResponseEntity.ok().body("Applicant accepted");
         }
 
