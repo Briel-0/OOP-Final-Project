@@ -133,7 +133,7 @@
                     <li class="nav-item" id="nav-candidates"><a href="javascript:void(0)" onclick="switchView('candidates')"><span>Candidates</span></a></li>
                     <li class="nav-item" id="nav-interviews"><a href="javascript:void(0)" onclick="switchView('interviews')"><span>Interviews</span></a></li>
                     <li class="nav-item" id="nav-messages"><a href="javascript:void(0)" onclick="switchView('messages')"><span>Messages</span></a></li>
-                    <li class="nav-item"><a href="javascript:void(0)"><span>Notifications</span></a></li>
+                    <li class="nav-item" id="nav-notifications"><a href="javascript:void(0)" onclick="switchView('notifications')"><span>Notifications</span></a></li>
                 </ul>
 
                 <button class="btn-create-job" onclick="openCreateJobModal()">+ Create job post</button>
@@ -152,9 +152,9 @@
         <main class="main-content">
             <div class="top-bar">
                 <a href="/company/profile" class="btn-company-profile">View company profile</a>
-                <div class="notification-wrapper">
+                <div class="notification-wrapper" onclick="switchView('notifications')">
                     <span style="font-size: 18px;">🔔</span>
-                    <span class="notification-badge"></span>
+                    <span class="notification-badge" id="notifBadge" style="display: none;"></span>
                 </div>
                 <div class="user-menu-container">
                     <button class="avatar-circle" id="companyMenuBtn">--</button>
@@ -278,6 +278,17 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <div id="view-notifications" class="view-section">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div class="header-title">
+                        <h1>Notifications</h1>
+                        <p>Recruitment activity, deadlines, and applicant updates.</p>
+                    </div>
+                    <button type="button" onclick="markCompanyNotificationsRead()" style="background: white; border: 1px solid #cbd5e1; color: #104233; padding: 10px 20px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer;">Mark all as read</button>
+                </div>
+                <div id="companyNotificationList" style="display: flex; flex-direction: column; gap: 12px;"></div>
             </div>
 
         </main>
@@ -973,6 +984,71 @@
             });
         }
 
+        // Turns a date into text like "10 minutes ago"
+        function timeAgo(isoText) {
+            if (!isoText) return '';
+            const minutes = Math.floor((Date.now() - new Date(isoText).getTime()) / 60000);
+            if (minutes < 1) return 'Just now';
+            if (minutes < 60) return minutes + ' minutes ago';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + (hours === 1 ? ' hour ago' : ' hours ago');
+            const days = Math.floor(hours / 24);
+            return days + (days === 1 ? ' day ago' : ' days ago');
+        }
+
+        // Fills the notification list and the bell dot from the database
+        function loadCompanyNotifications() {
+            fetch('/api/company/notifications')
+                .then(res => res.ok ? res.json() : [])
+                .then(list => {
+                    const box = document.getElementById('companyNotificationList');
+                    box.innerHTML = '';
+                    const unread = Array.isArray(list) ? list.filter(n => !n.isRead).length : 0;
+                    document.getElementById('notifBadge').style.display = unread > 0 ? 'block' : 'none';
+
+                    if (!Array.isArray(list) || list.length === 0) {
+                        box.innerHTML = '<div class="card"><p style="color: #718096; font-size: 14px;">No notifications yet.</p></div>';
+                        return;
+                    }
+                    list.forEach(n => {
+                        const row = document.createElement('div');
+                        const border = n.isRead ? '#e2e8f0' : '#115e59';
+                        row.style.cssText = 'background:white; border:1px solid ' + border + '; border-radius:12px; padding:18px 24px; display:flex; align-items:center; gap:16px;';
+                        const icon = document.createElement('div');
+                        icon.style.cssText = 'width:36px; height:36px; background:#f0fdf4; border-radius:8px; display:flex; justify-content:center; align-items:center; font-size:16px;';
+                        icon.innerText = '🔔';
+                        const body = document.createElement('div');
+                        body.style.flex = '1';
+                        const title = document.createElement('div');
+                        title.style.cssText = 'font-size:13px; color:#1a202c; font-weight:' + (n.isRead ? '500' : '700') + ';';
+                        title.innerText = n.title;
+                        const msg = document.createElement('div');
+                        msg.style.cssText = 'font-size:12px; color:#718096; margin-top:2px;';
+                        msg.innerText = n.message || '';
+                        const time = document.createElement('div');
+                        time.style.cssText = 'font-size:10px; color:#a0aec0; margin-top:4px;';
+                        time.innerText = timeAgo(n.sentAt);
+                        body.appendChild(title);
+                        body.appendChild(msg);
+                        body.appendChild(time);
+                        const view = document.createElement('span');
+                        view.style.cssText = 'font-size:12px; font-weight:700; color:#115e59; cursor:pointer;';
+                        view.innerText = 'View';
+                        view.onclick = function() { if (n.targetPage) switchView(n.targetPage); };
+                        row.appendChild(icon);
+                        row.appendChild(body);
+                        row.appendChild(view);
+                        box.appendChild(row);
+                    });
+                });
+        }
+
+        // Marks every notification as read, then refreshes the list and the bell dot
+        function markCompanyNotificationsRead() {
+            fetch('/api/company/notifications/mark-read', { method: 'POST' })
+                .then(() => loadCompanyNotifications());
+        }
+
         // Switches between the Dashboard and Candidates pages
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
@@ -983,6 +1059,7 @@
             if (viewName === 'candidates') loadCandidates();
             if (viewName === 'messages') loadChatList();
             if (viewName === 'interviews') loadInterviews();
+            if (viewName === 'notifications') loadCompanyNotifications();
         }
 
         // Fills the Candidates table with this company's real applicants
@@ -1176,6 +1253,7 @@
             window.onload = function() {
             loadMetaData();
             loadCompanyHeader();
+            loadCompanyNotifications();
         };
     </script>
 </body>

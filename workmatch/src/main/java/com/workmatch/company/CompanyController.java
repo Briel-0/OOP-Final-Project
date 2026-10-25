@@ -12,6 +12,8 @@ import com.workmatch.job.Job;
 import com.workmatch.job.JobLabel;
 import com.workmatch.job.JobLabelRepository;
 import com.workmatch.matching.MatchingService;
+import com.workmatch.notification.Notification;
+import com.workmatch.notification.NotificationRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,7 @@ public class CompanyController {
     private final ApplicantLabelRepository applicantLabelRepository;
     private final JobLabelRepository jobLabelRepository;
     private final MatchingService matchingService;
+    private final NotificationRepository notificationRepository;
 
     public CompanyController(CompanyRepository companyRepository,
                             com.workmatch.job.JobRepository jobRepository,
@@ -42,7 +45,8 @@ public class CompanyController {
                             LabelRepository labelRepository,
                             ApplicantLabelRepository applicantLabelRepository,
                             JobLabelRepository jobLabelRepository,
-                            MatchingService matchingService) {
+                            MatchingService matchingService,
+                            NotificationRepository notificationRepository) {
         this.companyRepository = companyRepository;
         this.jobRepository = jobRepository;
         this.applicationRepository = applicationRepository;
@@ -51,6 +55,7 @@ public class CompanyController {
         this.applicantLabelRepository = applicantLabelRepository;
         this.jobLabelRepository = jobLabelRepository;
         this.matchingService = matchingService;
+        this.notificationRepository = notificationRepository;
     }
 
     @GetMapping("/company/api/{id}")
@@ -70,6 +75,35 @@ public class CompanyController {
         Map<String, Object> response = new HashMap<>();
         response.put("companyName", companyName);
         return ResponseEntity.ok(response);
+    }
+
+    // Only the logged-in company's notifications, newest first, plus the unread count
+    @GetMapping("/api/company/notifications")
+    @ResponseBody
+    public ResponseEntity<?> getCompanyNotifications(HttpSession session) {
+        String companyName = (String) session.getAttribute("companyName");
+        if (companyName == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        return ResponseEntity.ok(notificationRepository.findByCompanyNameOrderBySentAtDesc(companyName));
+    }
+
+    // Marks only this company's notifications as read
+    @PostMapping("/api/company/notifications/mark-read")
+    @ResponseBody
+    public ResponseEntity<?> markCompanyNotificationsRead(HttpSession session) {
+        String companyName = (String) session.getAttribute("companyName");
+        if (companyName == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        List<Notification> list = notificationRepository.findByCompanyNameOrderBySentAtDesc(companyName);
+        for (Notification n : list) {
+            n.setIsRead(true);
+        }
+        notificationRepository.saveAll(list);
+        Map<String, String> res = new HashMap<>();
+        res.put("status", "success");
+        return ResponseEntity.ok(res);
     }
 
     // Lists the applications sent to the logged-in company's jobs, with a match score

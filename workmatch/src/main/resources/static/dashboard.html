@@ -411,9 +411,12 @@
             <div id="view-notifications" class="view-section">
                 <div class="header-title">
                     <h1>Notifications</h1>
-                    <p>Stay informed about application updates and upcoming deadlines.</p>
+                    <p>Your latest WorkMatch updates.</p>
                 </div>
-                <div class="card"><p style="color: #718096; font-size: 14px;">No notifications in database.</p></div>
+                <div id="notificationList" style="display: flex; flex-direction: column; gap: 12px;"></div>
+                <div>
+                    <button type="button" class="btn-purple" onclick="markAllNotificationsRead()">Mark all as read</button>
+                </div>
             </div>
 
             <!-- VIEW 7: MY PROFILE -->
@@ -1470,6 +1473,49 @@
             });
         }
 
+        // Fills the notification list from the database
+        function loadNotifications() {
+            fetch('/api/notifications')
+                .then(res => res.ok ? res.json() : [])
+                .then(list => {
+                    const box = document.getElementById('notificationList');
+                    box.innerHTML = '';
+                    if (!Array.isArray(list) || list.length === 0) {
+                        box.innerHTML = '<div class="card"><p style="color: #718096; font-size: 14px;">No notifications yet.</p></div>';
+                        return;
+                    }
+                    list.forEach((n, i) => {
+                        const row = document.createElement('div');
+                        const border = n.isRead ? '#e2e8f0' : '#6b21a8';
+                        row.style.cssText = 'background:white; border:1px solid ' + border + '; border-radius:12px; padding:20px 24px; display:flex; align-items:center; gap:16px; cursor:pointer;';
+                        const num = document.createElement('span');
+                        num.style.cssText = 'font-family:"Playfair Display", serif; font-size:16px; color:#6b21a8;';
+                        num.innerText = String(i + 1).padStart(2, '0');
+                        const title = document.createElement('span');
+                        title.style.cssText = 'flex:1; font-size:14px; color:#1a202c; font-weight:' + (n.isRead ? '500' : '700') + ';';
+                        title.innerText = n.title;
+                        const arrow = document.createElement('span');
+                        arrow.style.color = '#1a202c';
+                        arrow.innerText = '›';
+                        row.appendChild(num);
+                        row.appendChild(title);
+                        row.appendChild(arrow);
+                        // The row opens the page the notification is about
+                        row.onclick = function() { if (n.targetPage) switchView(n.targetPage); };
+                        box.appendChild(row);
+                    });
+                });
+        }
+
+        // Marks every notification as read, then refreshes the list and the counter
+        function markAllNotificationsRead() {
+            fetch('/api/notifications/mark-read', { method: 'POST' })
+                .then(() => {
+                    loadNotifications();
+                    loadHeader();
+                });
+        }
+
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
@@ -1481,7 +1527,8 @@
                 document.getElementById(`nav-${viewName}`).classList.add('active');
             }
             
-            if (viewName === 'messages') loadChatList();
+            if (viewName === 'messages') loadChatList(); 
+            if (viewName === 'notifications') loadNotifications();
 
             const menu = document.getElementById('userDropdownMenu');
             if (menu) menu.style.display = 'none';
