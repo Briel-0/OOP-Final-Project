@@ -130,23 +130,33 @@ public class ApplicantController {
         return ResponseEntity.ok(applicationRepository.findByApplicantId(applicantId));
     }
 
+    // Only the logged-in applicant's notifications, newest first
     @GetMapping("/api/notifications")
     @ResponseBody
-    public List<Notification> getNotifications() {
-        return notificationRepository.findAll();
+    public ResponseEntity<?> getNotifications(HttpSession session) {
+        Long applicantId = (Long) session.getAttribute("applicantId");
+        if (applicantId == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        return ResponseEntity.ok(notificationRepository.findByApplicantIdOrderBySentAtDesc(applicantId));
     }
 
+    // Marks only this applicant's notifications as read
     @PostMapping("/api/notifications/mark-read")
     @ResponseBody
-    public Map<String, String> markAllNotificationsRead() {
-        List<Notification> list = notificationRepository.findAll();
+    public ResponseEntity<?> markAllNotificationsRead(HttpSession session) {
+        Long applicantId = (Long) session.getAttribute("applicantId");
+        if (applicantId == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        List<Notification> list = notificationRepository.findByApplicantIdOrderBySentAtDesc(applicantId);
         for (Notification n : list) {
             n.setIsRead(true);
         }
         notificationRepository.saveAll(list);
         Map<String, String> res = new HashMap<>();
         res.put("status", "success");
-        return res;
+        return ResponseEntity.ok(res);
     }
 
     @GetMapping("/api/applicant/me")
@@ -209,7 +219,7 @@ public class ApplicantController {
         // Only unread messages that companies sent to this applicant
         response.put("unreadMessages", messageRepository.countByApplicantIdAndSenderRoleAndIsReadFalse(applicantId, "COMPANY"));
         response.put("upcomingInterviews", 0);
-        response.put("unreadNotifications", notificationRepository.count());
+        response.put("unreadNotifications", notificationRepository.countByApplicantIdAndIsReadFalse(applicantId));
         return ResponseEntity.ok(response);
     }
 
