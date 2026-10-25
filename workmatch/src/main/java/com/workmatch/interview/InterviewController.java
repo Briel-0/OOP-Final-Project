@@ -6,6 +6,7 @@ import com.workmatch.applicant.Application;
 import com.workmatch.applicant.JobApplicationRepository;
 import com.workmatch.message.Message;
 import com.workmatch.message.MessageRepository;
+import com.workmatch.notification.NotificationService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,15 +24,18 @@ public class InterviewController {
     private final JobApplicationRepository applicationRepository;
     private final ApplicantRepository applicantRepository;
     private final MessageRepository messageRepository;
+    private final NotificationService notificationService;
 
     public InterviewController(InterviewRepository interviewRepository,
-                               JobApplicationRepository applicationRepository,
-                               ApplicantRepository applicantRepository,
-                               MessageRepository messageRepository) {
+                            JobApplicationRepository applicationRepository,
+                            ApplicantRepository applicantRepository,
+                            MessageRepository messageRepository,
+                            NotificationService notificationService) {
         this.interviewRepository = interviewRepository;
         this.applicationRepository = applicationRepository;
         this.applicantRepository = applicantRepository;
         this.messageRepository = messageRepository;
+        this.notificationService = notificationService;
     }
 
     // Applicants the company accepted, with their interview time if one is set
@@ -137,6 +141,14 @@ public class InterviewController {
             card.setCreatedAt(LocalDateTime.now().toString());
             card.setIsRead(false);
             messageRepository.save(card);
+
+            // Tell the applicant the interview time is set or changed
+            notificationService.notifyApplicant(
+                    a.getApplicantId(),
+                    "Interview time set",
+                    a.getCompany() + " set your interview for " + a.getJobTitle()
+                            + " on " + when.toString().replace('T', ' ') + ". Please confirm it in Messages.",
+                    "messages");
         }
 
         return ResponseEntity.ok().body("Interview scheduled");
@@ -189,6 +201,13 @@ public class InterviewController {
             card.setCreatedAt(LocalDateTime.now().toString());
             card.setIsRead(false);
             messageRepository.save(card);
+
+            // Tell the applicant they received a job offer
+            notificationService.notifyApplicant(
+                    a.getApplicantId(),
+                    "You received a job offer",
+                    a.getCompany() + " sent you an offer for " + a.getJobTitle() + ". Please answer it in Messages.",
+                    "messages");
         }
 
         return ResponseEntity.ok().body("Offer sent");

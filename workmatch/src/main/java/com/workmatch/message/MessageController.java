@@ -4,6 +4,7 @@ import com.workmatch.applicant.Applicant;
 import com.workmatch.applicant.ApplicantRepository;
 import com.workmatch.applicant.Application;
 import com.workmatch.applicant.JobApplicationRepository;
+import com.workmatch.notification.NotificationService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,13 +19,16 @@ public class MessageController {
     private final MessageRepository messageRepository;
     private final JobApplicationRepository applicationRepository;
     private final ApplicantRepository applicantRepository;
+    private final NotificationService notificationService;
 
     public MessageController(MessageRepository messageRepository,
-                             JobApplicationRepository applicationRepository,
-                             ApplicantRepository applicantRepository) {
+                            JobApplicationRepository applicationRepository,
+                            ApplicantRepository applicantRepository,
+                            NotificationService notificationService) {
         this.messageRepository = messageRepository;
         this.applicationRepository = applicationRepository;
         this.applicantRepository = applicantRepository;
+        this.notificationService = notificationService;
     }
 
     // True when this applicant applied to a job of this company
@@ -167,6 +171,16 @@ public class MessageController {
         applicationRepository.save(a);
         card.setCardStatus("Confirmed");
         messageRepository.save(card);
+
+        // Tell the company the applicant confirmed the time
+        Applicant applicant = applicantRepository.findById(applicantId).orElse(null);
+        String name = applicant != null ? applicant.getFullName() : "An applicant";
+        notificationService.notifyCompany(
+                a.getCompany(),
+                "Interview time confirmed",
+                name + " confirmed the interview for " + a.getJobTitle(),
+                "interviews");
+
         return ResponseEntity.ok().body("Interview confirmed");
     }
 
@@ -188,10 +202,23 @@ public class MessageController {
         // The status stays Interview invited so the company can pick a new time
         card.setCardStatus("Declined");
         messageRepository.save(card);
+
+        // Tell the company the applicant cannot make the time
+        Application a = applicationRepository.findById(card.getApplicationId()).orElse(null);
+        if (a != null) {
+            Applicant applicant = applicantRepository.findById(applicantId).orElse(null);
+            String name = applicant != null ? applicant.getFullName() : "An applicant";
+            notificationService.notifyCompany(
+                    a.getCompany(),
+                    "Applicant can't make the time",
+                    name + " can't make the interview for " + a.getJobTitle() + ". Please pick a new time.",
+                    "interviews");   
+        }
+
         return ResponseEntity.ok().body("Marked as can't make it");
     }
 
-        // Applicant accepts the job offer on an offer card
+   // Applicant accepts the job offer on an offer card
     @PostMapping("/applicant/offer/{messageId}/accept")
     public ResponseEntity<?> acceptOffer(@PathVariable Long messageId, HttpSession session) {
         Long applicantId = (Long) session.getAttribute("applicantId");
@@ -216,6 +243,15 @@ public class MessageController {
         card.setCardStatus("Accepted");
         messageRepository.save(card);
 
+        // Tell the company the applicant accepted the offer
+        Applicant applicant = applicantRepository.findById(applicantId).orElse(null);
+        String name = applicant != null ? applicant.getFullName() : "An applicant";
+        notificationService.notifyCompany(
+                a.getCompany(),
+                "Offer accepted",
+                name + " accepted your offer for " + a.getJobTitle(),
+                "candidates");
+
         // One hire per job: every other open applicant on the same job is Not selected
         for (Application other : applicationRepository.findByCompany(a.getCompany())) {
             if (other.getId().equals(a.getId())) continue;
@@ -224,7 +260,7 @@ public class MessageController {
             // Use the job id when both rows have one, otherwise the job title
             boolean sameJob;
             if (a.getJobId() != null && other.getJobId() != null) {
-                sameJob = a.getJobId().equals(other.getJobId());
+            sameJob = a.getJobId().equals(other.getJobId());
             } else {
                 sameJob = a.getJobTitle() != null && a.getJobTitle().equals(other.getJobTitle());
             }
@@ -256,23 +292,23 @@ public class MessageController {
             return ResponseEntity.badRequest().body("This offer can no longer be declined.");
         }
 
-    a.setStatus("Not selected");
-    a.setRejectionReason("Applicant declined the offer");
-    applicationRepository.save(a);
-    card.setCardStatus("Declined");
-    messageRepository.save(card);
+        a.setStatus("Not selected");
+        a.setRejectionReason("Applicant declined the offer");
+        applicationRepository.save(a);
+        card.setCardStatus("Declined");
+        messageRepository.save(card);
 
-    // Tell the company the applicant declined the offer
-    Applicant applicant = applicantRepository.findById(applicantId).orElse(null);
-    String name = applicant != null ? applicant.getFullName() : "An applicant";
-    notificationService.notifyCompany(
-            a.getCompany(),
-            "Offer declined",
-            name + " declined your offer for " + a.getJobTitle(),
-            "candidates");
+        // Tell the company the applicant declined the offer
+        Applicant applicant = applicantRepository.findById(applicantId).orElse(null);
+        String name = applicant != null ? applicant.getFullName() : "An applicant";
+        notificationService.notifyCompany(
+                a.getCompany(),
+                "Offer declined",
+                name + " declined your offer for " + a.getJobTitle(),
+                "candidates");
 
-    return ResponseEntity.ok().body("Offer declined");
-}
+        return ResponseEntity.ok().body("Offer declined");
+    }
 
     // Company sends a message to an applicant
     @PostMapping("/company/send")
