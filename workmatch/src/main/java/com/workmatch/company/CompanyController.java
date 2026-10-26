@@ -95,8 +95,9 @@ public class CompanyController {
         if (companyName == null) {
             return ResponseEntity.status(401).body("Please log in first.");
         }
-        // Make the "interview tomorrow" reminder if one is due
+        // Make the reminders if any are due
         reminderService.interviewRemindersForCompany(companyName);
+        reminderService.closingSoonRemindersForCompany(companyName);
         return ResponseEntity.ok(notificationRepository.findByCompanyNameOrderBySentAtDesc(companyName));
     }
 

@@ -6,6 +6,9 @@ import com.workmatch.applicant.Application;
 import com.workmatch.applicant.JobApplicationRepository;
 import com.workmatch.interview.Interview;
 import com.workmatch.interview.InterviewRepository;
+import com.workmatch.job.Job;
+import com.workmatch.job.JobRepository;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -18,17 +21,20 @@ public class ReminderService {
     private final ApplicantRepository applicantRepository;
     private final NotificationRepository notificationRepository;
     private final NotificationService notificationService;
+    private final JobRepository jobRepository;
 
     public ReminderService(InterviewRepository interviewRepository,
                            JobApplicationRepository applicationRepository,
                            ApplicantRepository applicantRepository,
                            NotificationRepository notificationRepository,
-                           NotificationService notificationService) {
+                           NotificationService notificationService,
+                           JobRepository jobRepository) {
         this.interviewRepository = interviewRepository;
         this.applicationRepository = applicationRepository;
         this.applicantRepository = applicantRepository;
         this.notificationRepository = notificationRepository;
         this.notificationService = notificationService;
+        this.jobRepository = jobRepository;
     }
 
     // True when this application has a confirmed interview happening tomorrow
@@ -71,6 +77,22 @@ public class ReminderService {
                     + " is on " + i.getScheduledAt().toString().replace('T', ' ') + ".";
             if (!notificationRepository.existsByCompanyNameAndTitleAndMessage(companyName, title, message)) {
                 notificationService.notifyCompany(companyName, title, message, "interviews");
+            }
+        }
+    }
+
+    // Reminder for a company when one of its job posts closes tomorrow
+    public void closingSoonRemindersForCompany(String companyName) {
+        for (Job job : jobRepository.findAll()) {
+            if (!companyName.equals(job.getCompany())) continue;
+            if (job.getClosingDate() == null) continue;
+            if (!job.getClosingDate().equals(LocalDate.now().plusDays(1))) continue;
+
+            String title = "Job post closing soon";
+            String message = "Your job post " + job.getTitle() + " closes tomorrow ("
+                    + job.getClosingDate() + ").";
+            if (!notificationRepository.existsByCompanyNameAndTitleAndMessage(companyName, title, message)) {
+                notificationService.notifyCompany(companyName, title, message, "dashboard");
             }
         }
     }
