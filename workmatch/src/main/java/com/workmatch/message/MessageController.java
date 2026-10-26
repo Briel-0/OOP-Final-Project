@@ -268,6 +268,13 @@ public class MessageController {
                 other.setStatus("Not selected");
                 other.setRejectionReason("Position has been filled");
                 applicationRepository.save(other);
+
+                // Tell this applicant the position was filled
+                notificationService.notifyApplicant(
+                        other.getApplicantId(),
+                        "Position has been filled",
+                        other.getCompany() + " filled the position for " + other.getJobTitle(),
+                        "applications");
             }
         }
         return ResponseEntity.ok().body("Offer accepted");

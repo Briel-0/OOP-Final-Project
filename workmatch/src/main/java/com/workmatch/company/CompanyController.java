@@ -1,5 +1,7 @@
 package com.workmatch.company;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
 import com.workmatch.applicant.Applicant;
 import com.workmatch.applicant.ApplicantRepository;
 import com.workmatch.applicant.Application;
@@ -15,6 +17,8 @@ import com.workmatch.matching.MatchingService;
 import com.workmatch.notification.Notification;
 import com.workmatch.notification.NotificationRepository;
 import com.workmatch.notification.NotificationService;
+import com.workmatch.notification.ReminderService;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +43,9 @@ public class CompanyController {
     private final MatchingService matchingService;
     private final NotificationRepository notificationRepository;
     private final NotificationService notificationService;
+
+    @Autowired
+    private ReminderService reminderService;
 
     public CompanyController(CompanyRepository companyRepository,
                             com.workmatch.job.JobRepository jobRepository,
@@ -81,7 +88,6 @@ public class CompanyController {
         return ResponseEntity.ok(response);
     }
 
-    // Only the logged-in company's notifications, newest first, plus the unread count
     @GetMapping("/api/company/notifications")
     @ResponseBody
     public ResponseEntity<?> getCompanyNotifications(HttpSession session) {
@@ -89,6 +95,8 @@ public class CompanyController {
         if (companyName == null) {
             return ResponseEntity.status(401).body("Please log in first.");
         }
+        // Make the "interview tomorrow" reminder if one is due
+        reminderService.interviewRemindersForCompany(companyName);
         return ResponseEntity.ok(notificationRepository.findByCompanyNameOrderBySentAtDesc(companyName));
     }
 
@@ -335,17 +343,15 @@ public class CompanyController {
             a.setStatus("Not selected");
             a.setRejectionReason(reason.trim());
             applicationRepository.save(a);
-            return ResponseEntity.ok().body("Applicant rejected");
-        }
 
-        // Used when the page sends JSON (login.html does this)
-        @PostMapping(value = "/api/auth/company/register", consumes = "application/json")
-        @ResponseBody
-        public ResponseEntity<?> registerCompanyJson(@RequestBody CompanyDto dto) {
-            if (saveCompany(dto)) {
-                return ResponseEntity.ok().body("Registered successfully");
-            }
-            return ResponseEntity.badRequest().body("Email already registered");
+            // Tell the applicant their application was not selected
+            notificationService.notifyApplicant(
+                    a.getApplicantId(),
+                    "Application not selected",
+                    a.getCompany() + " did not select your application for " + a.getJobTitle(),
+                    "applications");
+
+            return ResponseEntity.ok().body("Applicant rejected");
         }
 
     // Used when a normal HTML form is submitted

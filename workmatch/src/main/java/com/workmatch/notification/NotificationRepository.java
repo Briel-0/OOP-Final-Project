@@ -13,4 +13,8 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     // How many unread ones each side has
     long countByApplicantIdAndIsReadFalse(Long applicantId);
     long countByCompanyNameAndIsReadFalse(String companyName);
+
+    // True if this exact notification was already sent (stops duplicate reminders)
+    boolean existsByApplicantIdAndTitleAndMessage(Long applicantId, String title, String message);
+    boolean existsByCompanyNameAndTitleAndMessage(String companyName, String title, String message);
 }

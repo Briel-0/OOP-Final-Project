@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import com.workmatch.notification.ReminderService;
 import com.workmatch.Label;
 import com.workmatch.LabelRepository;
 import com.workmatch.job.Job;
@@ -37,6 +39,9 @@ public class ApplicantController {
     private final ApplicantLabelRepository applicantLabelRepository;
     private final LabelRepository labelRepository;
     private final NotificationService notificationService;
+    
+    @Autowired
+    private ReminderService reminderService;
 
     public ApplicantController(JobRepository jobRepository,
                             JobApplicationRepository applicationRepository,
@@ -153,7 +158,6 @@ public class ApplicantController {
         return ResponseEntity.ok(applicationRepository.findByApplicantId(applicantId));
     }
 
-    // Only the logged-in applicant's notifications, newest first
     @GetMapping("/api/notifications")
     @ResponseBody
     public ResponseEntity<?> getNotifications(HttpSession session) {
@@ -161,6 +165,8 @@ public class ApplicantController {
         if (applicantId == null) {
             return ResponseEntity.status(401).body("Please log in first.");
         }
+        // Make the "interview tomorrow" reminder if one is due
+        reminderService.interviewRemindersForApplicant(applicantId);
         return ResponseEntity.ok(notificationRepository.findByApplicantIdOrderBySentAtDesc(applicantId));
     }
 
