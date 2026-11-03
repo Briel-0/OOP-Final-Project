@@ -146,6 +146,20 @@
         .checkbox-card input[type="radio"] { width: 16px; height: 16px; accent-color: #6b21a8; cursor: pointer; }
         .checkbox-card:has(input[type="radio"]:checked) { background: #f3e8ff; border-color: #d8b4fe; color: #6b21a8; font-weight: 600; }
 
+        /* PRACTICE INTERVIEW PAGE */
+        .pr-hero { display: grid; grid-template-columns: 1.1fr 1fr; background: white; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; min-height: 340px; }
+        .pr-preview { background: linear-gradient(160deg, #1f3d35, #0f241f); position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
+        .pr-avatar { width: 96px; height: 96px; border-radius: 50%; background: #b86a4e; border: 3px solid #d9957c; color: white; font-family: 'Playfair Display', serif; font-size: 32px; display: flex; justify-content: center; align-items: center; }
+        .pr-preview-label { font-size: 11px; color: #cfe3dc; }
+        .pr-private { position: absolute; left: 16px; bottom: 16px; background: rgba(0,0,0,0.45); color: #e5efec; font-size: 11px; padding: 8px 12px; border-radius: 8px; }
+        .pr-info { padding: 32px; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+        .pr-info h2 { font-family: 'Playfair Display', serif; font-size: 28px; color: #1a202c; line-height: 1.2; }
+        .pr-features { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 10px 0; }
+        .pr-feature { font-size: 12px; color: #6b21a8; }
+        .pr-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .pr-step { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
+        .pr-step-num { font-family: 'Playfair Display', serif; font-size: 16px; color: #6b21a8; margin-bottom: 14px; }
+
         /* USER MENU DROPDOWN */
         .user-dropdown { display: none; position: absolute; top: 44px; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); width: 160px; padding: 8px 0; z-index: 100; }
         .user-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; font-size: 13px; color: #4a5568; text-decoration: none; font-weight: 500; cursor: pointer; }
@@ -398,13 +412,50 @@
                 </div>
             </div>
 
-            <!-- VIEW 5: PRACTICE INTERVIEW -->
+                        <!-- VIEW 5: PRACTICE INTERVIEW -->
             <div id="view-practice" class="view-section">
                 <div class="header-title">
-                    <h1>Practice Interview</h1>
-                    <p>Prepare for accessibility-minded interviews with tailored prompts.</p>
+                    <p style="font-size: 11px; font-weight: 700; color: #6b21a8; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px;">🎥 Interview preparation</p>
+                    <h1>Practice at your own pace.</h1>
+                    <p>Rehearse common interview questions in a private WorkMatch room with captions and supportive feedback.</p>
                 </div>
-                <div class="card"><p style="color: #718096; font-size: 14px;">Interactive mock interview session workspace.</p></div>
+
+                <div class="pr-hero">
+                    <div class="pr-preview">
+                        <div class="pr-avatar" id="practiceAvatar">--</div>
+                        <div class="pr-preview-label">Camera preview</div>
+                        <div class="pr-private">🛡 Private, never shared with employers</div>
+                    </div>
+                    <div class="pr-info">
+                        <span style="font-size: 11px; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">Practice session</span>
+                        <h2>Build confidence before the real interview</h2>
+                        <p style="font-size: 12px; color: #718096; line-height: 1.5;">Work through job-relevant questions. Turn your camera or microphone off at any time, use live captions, and receive private coaching suggestions.</p>
+                        <div class="pr-features">
+                            <div class="pr-feature">🎤 Voice or typed answers</div>
+                            <div class="pr-feature"><strong>CC</strong> Live captions</div>
+                            <div class="pr-feature">✨ Private feedback</div>
+                        </div>
+                        <button type="button" class="btn-purple" style="padding: 14px; font-size: 14px;" onclick="window.location.href='/practice.html'">Start practice interview</button>
+                    </div>
+                </div>
+
+                <div class="pr-steps">
+                    <div class="pr-step">
+                        <div class="pr-step-num">01</div>
+                        <div style="font-size: 12px; font-weight: 700; color: #1a202c; margin-bottom: 4px;">Check your setup</div>
+                        <div style="font-size: 11px; color: #718096;">Test your camera, microphone, and captions.</div>
+                    </div>
+                    <div class="pr-step">
+                        <div class="pr-step-num">02</div>
+                        <div style="font-size: 12px; font-weight: 700; color: #1a202c; margin-bottom: 4px;">Answer naturally</div>
+                        <div style="font-size: 11px; color: #718096;">Take your time and use examples from your experience.</div>
+                    </div>
+                    <div class="pr-step">
+                        <div class="pr-step-num">03</div>
+                        <div style="font-size: 12px; font-weight: 700; color: #1a202c; margin-bottom: 4px;">Review feedback</div>
+                        <div style="font-size: 11px; color: #718096;">See private suggestions after each response.</div>
+                    </div>
+                </div>
             </div>
 
             <!-- VIEW 6: NOTIFICATIONS -->
@@ -703,6 +754,7 @@
                     document.getElementById('sidebarApplicantName').innerText = fullName;
                     document.getElementById('sidebarApplicantAvatar').innerText = initials;
                     document.getElementById('applicantAvatarBtn').innerText = initials;
+                    document.getElementById('practiceAvatar').innerText = initials;
 
                     const pct = (data.profileStrength || 0) + '%';
                     document.getElementById('sidebarStrengthText').innerText = pct;
