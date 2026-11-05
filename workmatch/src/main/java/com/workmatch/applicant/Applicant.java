@@ -25,6 +25,7 @@ public class Applicant {
     private String city;
     private String otherNeeds;
     private String program;
+    private String resumeFileName;
 
     public Applicant() {}
 
@@ -71,4 +72,7 @@ public class Applicant {
 
     public String getProgram() { return program; }
     public void setProgram(String program) { this.program = program; }
+
+    public String getResumeFileName() { return resumeFileName; }
+    public void setResumeFileName(String resumeFileName) { this.resumeFileName = resumeFileName; }
 }

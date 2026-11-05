@@ -572,25 +572,27 @@
                             <!-- RESUME TAB -->
                             <div id="tab-resume" class="profile-tab-content" style="display: none;">
                                 <h2 style="font-size: 18px; font-weight: 700; color: #1a202c; margin-bottom: 20px;">Resume information</h2>
-                                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
+                                <div id="resumeCard" style="display: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; justify-content: space-between; align-items: center; background: #f8fafc;">
                                     <div style="display: flex; align-items: center; gap: 12px;">
                                         <div style="background: #f3e8ff; color: #6b21a8; padding: 10px; border-radius: 8px; font-weight: 700;">📄</div>
                                         <div>
-                                            <div style="font-size: 14px; font-weight: 600; color: #1a202c;">Jamie_Mendoza_Resume.pdf</div>
+                                            <div id="resumeFileName" style="font-size: 14px; font-weight: 600; color: #1a202c;"></div>
                                             <div style="font-size: 11px; color: #718096;">PDF document • Visible to employers when you apply</div>
                                         </div>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
-                                        <button type="button" class="btn-purple-outline" style="padding: 6px 12px; font-size: 12px;">Open</button>
-                                        <button type="button" class="btn-purple-outline" style="padding: 6px 12px; font-size: 12px;">Replace</button>
+                                        <button type="button" class="btn-purple-outline" style="padding: 6px 12px; font-size: 12px;" onclick="openResume()">Open</button>
+                                        <button type="button" class="btn-purple-outline" style="padding: 6px 12px; font-size: 12px;" onclick="chooseResumeFile()">Replace</button>
                                     </div>
                                 </div>
-                                <div style="border: 2px dashed #d8b4fe; border-radius: 12px; padding: 24px; text-align: center; background: #faf5ff; cursor: pointer;">
+                                <div onclick="chooseResumeFile()" style="border: 2px dashed #d8b4fe; border-radius: 12px; padding: 24px; text-align: center; background: #faf5ff; cursor: pointer;">
                                     <div style="font-size: 24px; margin-bottom: 8px;">⬆</div>
                                     <div style="font-size: 14px; font-weight: 600; color: #6b21a8; margin-bottom: 4px;">Upload your résumé</div>
-                                    <div style="font-size: 12px; color: #718096;">Choose a PDF file from your device</div>
+                                    <div style="font-size: 12px; color: #718096;">Choose a PDF file from your device (up to 5 MB)</div>
                                 </div>
-                            </div>
+                                <input type="file" id="resumeFileInput" accept="application/pdf,.pdf" style="display: none;" onchange="uploadResume()">
+                                    <div id="resumeMsg" style="font-size: 13px; font-weight: 600; margin-top: 12px;"></div>
+                                </div>
 
                             <!-- INSIGHTS TAB -->
                             <div id="tab-insights" class="profile-tab-content" style="display: none;">
@@ -955,6 +957,61 @@
                 msgSpan.innerText = 'An error occurred.';
                 setTimeout(() => { msgSpan.innerText = ''; }, 3000);
             });
+        }
+
+        // Opens the file chooser
+        function chooseResumeFile() {
+            document.getElementById('resumeFileInput').click();
+        }
+
+        // Shows or hides the file card depending on whether a résumé exists
+        function loadResumeInfo() {
+            fetch('/api/applicant/resume/info')
+                .then(res => res.ok ? res.json() : null)
+                .then(d => {
+                    if (!d) return;
+                    document.getElementById('resumeCard').style.display = d.hasResume ? 'flex' : 'none';
+                    document.getElementById('resumeFileName').innerText = d.fileName || '';
+                });
+        }
+
+        // The Open button shows the PDF in a new tab
+        function openResume() {
+            window.open('/api/applicant/resume', '_blank');
+        }
+
+        // Sends the chosen PDF to the server
+        function uploadResume() {
+            const input = document.getElementById('resumeFileInput');
+            const msg = document.getElementById('resumeMsg');
+            if (input.files.length === 0) return;
+            const file = input.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                msg.style.color = '#b91c1c';
+                msg.innerText = 'The file is too big. The maximum is 5 MB.';
+                input.value = '';
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', file);
+            msg.style.color = '#718096';
+            msg.innerText = 'Uploading...';
+            fetch('/api/applicant/resume', { method: 'POST', body: formData })
+                .then(res => {
+                    if (res.ok) {
+                        msg.style.color = '#15803d';
+                        msg.innerText = '✓ Résumé saved';
+                        loadResumeInfo();
+                    } else {
+                        res.text().then(t => { msg.style.color = '#b91c1c'; msg.innerText = t; });
+                    }
+                    input.value = '';
+            })
+                .catch(err => {
+                    msg.style.color = '#b91c1c';
+                    msg.innerText = 'An error occurred while uploading.';
+                    input.value = '';
+                });
         }
 
         function loadData() {
@@ -1598,6 +1655,7 @@
         window.onload = function() {
             loadHeader();
             loadData();
+            loadResumeInfo();
             // Check every 15 seconds so the Join Meeting button turns on by itself
             setInterval(refreshCardJoinButtons, 15000);
         };
