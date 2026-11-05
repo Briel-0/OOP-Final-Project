@@ -103,8 +103,14 @@ public class ApplicantController {
         // Find the job, and block applying if it has closed
         Long jobId = null;
         for (Job j : jobRepository.findAll()) {
+            
             if (jobTitle.equals(j.getTitle()) && company.equals(j.getCompany())) {
                 jobId = j.getId();
+
+                if (Boolean.TRUE.equals(j.getIsHidden())) {
+                    return ResponseEntity.status(400).body("This job is no longer available.");
+                }
+
                 if (j.getClosingDate() != null && j.getClosingDate().isBefore(LocalDate.now())) {
                     return ResponseEntity.status(400).body("This job has closed.");
                 }

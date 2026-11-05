@@ -412,6 +412,25 @@
                 <div id="cdMatch" style="font-size: 12px; color: #166534; margin-top: 2px;"></div>
             </div>
 
+            <div style="margin-bottom: 20px;">
+                <div id="cdResumeBox" style="display: none;">
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px;">
+                        <div style="min-width: 0;">
+                            <div class="cd-box-title">Applicant résumé</div>
+                            <div id="cdResumeName" style="font-size: 13px; font-weight: 700; color: #1a202c; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+                            <div style="font-size: 10px; color: #718096;">Shared with this application · PDF document</div>
+                        </div>
+                        <button type="button" onclick="downloadResume()" style="background: white; border: 1px solid #115e59; color: #115e59; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; white-space: nowrap;">Download PDF</button>
+                    </div>
+                    <iframe id="cdResumeFrame" style="width: 100%; height: 320px; border: 1px solid #e2e8f0; border-radius: 10px; background: white;"></iframe>
+                    <p style="font-size: 11px; color: #718096; margin-top: 8px;">🛡 Use résumé information only for this application and keep candidate data private.</p>
+                </div>
+                <div id="cdNoResume" class="cd-box" style="display: none;">
+                    <div class="cd-box-title">Applicant résumé</div>
+                    <div style="font-size: 13px; font-weight: 600; color: #718096;">No résumé uploaded.</div>
+                </div>
+            </div>
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <div class="form-group">
                     <label>Education</label>
@@ -700,7 +719,7 @@
                     loadCompanyJobs();
                     document.getElementById('createJobForm').reset();
                 } else {
-                    alert('Failed to publish job. Please check inputs.');
+                    res.text().then(t => alert(t));
                 }
             })
             .catch(err => {
@@ -1152,6 +1171,13 @@
                     document.getElementById('cdLocation').innerText = place || 'Not provided';
                     setupCandidateButtons(d.status || 'Submitted');
 
+                    // Résumé: file card and preview, or a short note if there is none
+                    const hasResume = d.hasResume === true;
+                    document.getElementById('cdResumeBox').style.display = hasResume ? 'block' : 'none';
+                    document.getElementById('cdNoResume').style.display = hasResume ? 'none' : 'block';
+                    document.getElementById('cdResumeName').innerText = d.resumeFileName || '';
+                    document.getElementById('cdResumeFrame').src = hasResume ? '/api/company/applications/' + id + '/resume' : 'about:blank';
+
                     // Skills as small chips
                     const skillsBox = document.getElementById('cdSkills');
                     skillsBox.innerHTML = '';
@@ -1177,9 +1203,17 @@
 
         function closeCandidateModal() {
             document.getElementById('candidateModal').style.display = 'none';
+            // Stop the PDF preview
+            document.getElementById('cdResumeFrame').src = 'about:blank';
         }
 
-                // Shows or hides the buttons depending on the status, and fills the reasons
+        // Saves the applicant's résumé file to the computer
+        function downloadResume() {
+            if (currentCandidateId === null) return;
+            window.location.href = '/api/company/applications/' + currentCandidateId + '/resume?download=true';
+        }
+
+        // Shows or hides the buttons depending on the status, and fills the reasons
         function setupCandidateButtons(status) {
             const canAccept = status === 'Submitted' || status === 'Under review';
             const closed = status === 'Hired' || status === 'Not selected';

@@ -27,6 +27,8 @@ public class Job {
     private String city;
     private String otherNotes;
     private LocalDate closingDate;
+    private Boolean isHidden = false;
+    private String hiddenReason;
 
     public Job() {
     }
@@ -94,4 +96,9 @@ public class Job {
 
     public LocalDate getClosingDate() { return closingDate; }
     public void setClosingDate(LocalDate closingDate) { this.closingDate = closingDate; }
+
+    public Boolean getIsHidden() { return isHidden; }
+    public void setIsHidden(Boolean isHidden) { this.isHidden = isHidden; }
+    public String getHiddenReason() { return hiddenReason; }
+    public void setHiddenReason(String hiddenReason) { this.hiddenReason = hiddenReason; }
 }

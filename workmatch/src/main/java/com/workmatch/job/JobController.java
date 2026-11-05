@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.workmatch.LabelRepository;
+import com.workmatch.company.Company;
+import com.workmatch.company.CompanyRepository;
 
 import java.util.*;
 import java.time.LocalDate;
@@ -25,21 +27,24 @@ public class JobController {
     private final ApplicantLabelRepository applicantLabelRepository;
     private final MatchingService matchingService;
     private final LabelRepository labelRepository;
+    private final CompanyRepository companyRepository;
 
-        @Autowired
-        public JobController(JobRepository jobRepository,
-                     JobLabelRepository jobLabelRepository,
-                     ApplicantRepository applicantRepository,
-                     ApplicantLabelRepository applicantLabelRepository,
-                     MatchingService matchingService,
-                     LabelRepository labelRepository) {
-    this.jobRepository = jobRepository;
-    this.jobLabelRepository = jobLabelRepository;
-    this.applicantRepository = applicantRepository;
-    this.applicantLabelRepository = applicantLabelRepository;
-    this.matchingService = matchingService;
-    this.labelRepository = labelRepository;
-}
+    @Autowired
+    public JobController(JobRepository jobRepository,
+                         JobLabelRepository jobLabelRepository,
+                         ApplicantRepository applicantRepository,
+                         ApplicantLabelRepository applicantLabelRepository,
+                         MatchingService matchingService,
+                         LabelRepository labelRepository,
+                         CompanyRepository companyRepository) {
+        this.jobRepository = jobRepository;
+        this.jobLabelRepository = jobLabelRepository;
+        this.applicantRepository = applicantRepository;
+        this.applicantLabelRepository = applicantLabelRepository;
+        this.matchingService = matchingService;
+        this.labelRepository = labelRepository;
+        this.companyRepository = companyRepository;
+    }
 
     @GetMapping("/jobs")
     public ResponseEntity<?> getJobs(HttpSession session) {
@@ -53,8 +58,10 @@ public class JobController {
 
         List<Job> jobs = jobRepository.findAll();
         List<JobResponseDto> response = new ArrayList<>();
-        for (Job job : jobs) {
+        for (Job job : jobs) {  if (Boolean.TRUE.equals(job.getIsHidden())) continue;
             List<Label> jobLabels = loadJobLabels(job.getId());
+
+            
 
             List<Long> labelIds = new ArrayList<>();
             for (Label l : jobLabels) {
@@ -108,7 +115,7 @@ public class JobController {
         List<Job> jobs = jobRepository.findAll();
 
         List<Map<String, Object>> results = new ArrayList<>();
-        for (Job job : jobs) {
+        for (Job job : jobs) { if (Boolean.TRUE.equals(job.getIsHidden())) continue;
             List<Label> jobLabels = loadJobLabels(job.getId());
             MatchingService.MatchResult matchResult = matchingService.calculateMatch(applicant, job, jobLabels, applicantLabels);
 
@@ -146,6 +153,19 @@ public class JobController {
 
     @PostMapping("/company/jobs")
     public ResponseEntity<?> createJob(@RequestBody JobRequestDto dto, HttpSession session) {
+        
+        String companyEmail = (String) session.getAttribute("companyEmail");
+        Company company = companyEmail != null ? companyRepository.findByEmail(companyEmail).orElse(null) : null;
+        if (company == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+        if ("REJECTED".equals(company.getVerificationStatus())) {
+            return ResponseEntity.status(403).body("Your company was rejected: " + company.getRejectionReason());
+        }
+        if (!"VERIFIED".equals(company.getVerificationStatus())) {
+            return ResponseEntity.status(403).body("Waiting for admin approval.");
+        }
+
         String companyName = (String) session.getAttribute("companyName");
         if (companyName == null) {
             companyName = "Work4Us";

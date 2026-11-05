@@ -26,6 +26,8 @@ public class Applicant {
     private String otherNeeds;
     private String program;
     private String resumeFileName;
+    private Boolean isSuspended = false;
+    private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
 
     public Applicant() {}
 
@@ -75,4 +77,9 @@ public class Applicant {
 
     public String getResumeFileName() { return resumeFileName; }
     public void setResumeFileName(String resumeFileName) { this.resumeFileName = resumeFileName; }
+
+    public Boolean getIsSuspended() { return isSuspended; }
+    public void setIsSuspended(Boolean isSuspended) { this.isSuspended = isSuspended; }
+    public java.time.LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(java.time.LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -1,7 +1,5 @@
 package com.workmatch.company;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import com.workmatch.applicant.Applicant;
 import com.workmatch.applicant.ApplicantRepository;
 import com.workmatch.applicant.Application;
@@ -18,17 +16,26 @@ import com.workmatch.notification.Notification;
 import com.workmatch.notification.NotificationRepository;
 import com.workmatch.notification.NotificationService;
 import com.workmatch.notification.ReminderService;
+import com.workmatch.applicant.ResumeController;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import java.util.Optional;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @Controller
 public class CompanyController {
@@ -170,6 +177,49 @@ public class CompanyController {
         return ResponseEntity.ok(result);
     }
 
+    // Company opens or downloads the résumé of an applicant who applied to its job
+    @GetMapping("/api/company/applications/{id}/resume")
+    @ResponseBody
+    public ResponseEntity<?> getApplicationResume(@PathVariable Long id,
+                                                @RequestParam(defaultValue = "false") boolean download,
+                                                HttpSession session) {
+        String companyName = (String) session.getAttribute("companyName");
+        if (companyName == null) {
+            return ResponseEntity.status(401).body("Please log in first.");
+        }
+
+        // The application must exist and belong to this company
+        Application a = applicationRepository.findById(id).orElse(null);
+        if (a == null || !companyName.equals(a.getCompany()) || a.getApplicantId() == null) {
+            return ResponseEntity.status(404).body("Application not found.");
+        }
+
+        Path file = ResumeController.fileFor(a.getApplicantId());
+        if (!Files.exists(file)) {
+            return ResponseEntity.status(404).body("This applicant has not uploaded a resume.");
+        }
+
+        Applicant applicant = applicantRepository.findById(a.getApplicantId()).orElse(null);
+        String name = (applicant != null && applicant.getResumeFileName() != null)
+                ? applicant.getResumeFileName() : "resume.pdf";
+
+        try {
+            byte[] bytes = Files.readAllBytes(file);
+            // Download saves the file, otherwise the browser shows it
+            String disposition = ContentDisposition
+                    .builder(download ? "attachment" : "inline")
+                    .filename(name, StandardCharsets.UTF_8)
+                    .build().toString();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
+                    .body(bytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Could not read the file.");
+        }
+    }
+
     // Gives the full details of one applicant for the logged-in company
     @GetMapping("/api/company/applications/{id}")
     @ResponseBody
@@ -231,6 +281,8 @@ public class CompanyController {
         response.put("workSetup", workSetup);
         response.put("accessibilityNeeds", accessibilityNeeds);
         response.put("physicalLimits", physicalLimits);
+        response.put("resumeFileName", applicant.getResumeFileName());
+        response.put("hasResume", applicant.getResumeFileName() != null && Files.exists(ResumeController.fileFor(applicant.getId())));
         return ResponseEntity.ok(response);
     }
 
@@ -387,6 +439,11 @@ public class CompanyController {
     public ResponseEntity<?> loginCompany(@RequestBody CompanyDto dto, HttpSession session) {
         Optional<Company> company = companyRepository.findByEmail(dto.getEmail());
         if (company.isPresent() && company.get().getPassword().equals(dto.getPassword())) {
+
+            if (Boolean.TRUE.equals(company.get().getIsSuspended())) {
+                return ResponseEntity.status(403).body("This account is suspended.");
+            }
+
             // Forget any applicant that was logged in before
             session.removeAttribute("applicantEmail");
             session.removeAttribute("applicantId");

@@ -58,7 +58,11 @@ public class AuthController {
 
             Applicant applicant = applicantRepository.findFirstByEmail(email);
             if (applicant != null && applicant.getPassword() != null
-                    && applicant.getPassword().equals(password)) {
+                    && applicant.getPassword().equals(password)) {                
+                        
+                        if (Boolean.TRUE.equals(applicant.getIsSuspended())) {
+                    return ResponseEntity.status(403).body("This account is suspended.");
+                }
                 // Forget any company that was logged in before
                 session.removeAttribute("companyEmail");
                 session.removeAttribute("companyName");
