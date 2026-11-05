@@ -51,6 +51,10 @@
         .ctrl.off .ctrl-circle { background: #7f1d1d; }
         .ctrl.on .ctrl-circle { background: #34d399; color: #064e3b; font-weight: 700; font-size: 12px; }
         .btn-leave { position: absolute; right: 24px; background: #b4475a; color: white; border: none; padding: 12px 22px; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; }
+
+        .answer-box { width: 100%; background: #14251f; border: 1px solid #1f322d; border-radius: 8px; color: #e5efec; padding: 10px; font-size: 12px; resize: none; outline: none; }
+        .mic-status { font-size: 11px; color: #8aa59d; min-height: 14px; }
+        .ctrl.listening .ctrl-circle { background: #34d399; }
     </style>
 </head>
 <body>
@@ -88,6 +92,8 @@
                 <div class="tip-box">
                     <div class="tip-title">✨ Answering tip</div>
                     <div class="tip-text" id="tipText"></div>
+                    <textarea class="answer-box" id="answerBox" rows="5" placeholder="Speak with the microphone, or type your answer here..."></textarea>
+                    <div class="mic-status" id="micStatus"></div>
                 </div>
                 <button type="button" class="btn-feedback" id="btnFeedback">Get answer feedback</button>
                 <button type="button" class="btn-next" id="btnNext" onclick="nextQuestion()">Next question ›</button>
@@ -95,8 +101,9 @@
         </div>
 
         <div class="controls">
-            <button type="button" class="ctrl" id="btnMic" onclick="this.classList.toggle('off')">
-                <span class="ctrl-circle">🎤</span>Mute
+            <button type="button" class="ctrl" id="btnMic" onclick="toggleMic()">
+                <span class="ctrl-circle">🎤</span><span id="micLabel">Speak</span>
+            </button>
             </button>
             <button type="button" class="ctrl" id="btnCam" onclick="this.classList.toggle('off')">
                 <span class="ctrl-circle">📹</span>Stop video
@@ -134,8 +141,15 @@
         function nextQuestion() {
             if (current < questions.length - 1) {
                 current++;
+                // Each question starts with an empty answer
+                document.getElementById('answerBox').value = '';
                 showQuestion();
-            }
+            }   
+        }
+
+        function leaveRoom() {
+            stopListening();
+            window.location.href = '/dashboard.html';
         }
 
         // Shows or hides the caption bar
@@ -143,10 +157,6 @@
             const btn = document.getElementById('btnCaptions');
             btn.classList.toggle('on');
             document.getElementById('captionBar').style.display = btn.classList.contains('on') ? 'block' : 'none';
-        }
-
-        function leaveRoom() {
-            window.location.href = '/dashboard.html';
         }
 
         // Loads the applicant name and the questions from the database
@@ -178,7 +188,93 @@
                 });
         }
 
-        window.onload = loadRoom;
+        // ---------- Speaking (Chrome and Edge only) ----------
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let listening = false;
+
+function showCaption(text) {
+    document.getElementById('captionBar').innerText = text;
+}
+
+// Adds spoken words to the end of the answer box
+function addToAnswer(text) {
+    if (!text) return;
+    const box = document.getElementById('answerBox');
+    box.value = (box.value.trim() + ' ' + text).trim();
+    box.scrollTop = box.scrollHeight;
+}
+
+function setupSpeech() {
+    const status = document.getElementById('micStatus');
+    if (!SpeechRec) {
+        document.getElementById('btnMic').style.display = 'none';
+        status.innerText = 'Speaking is not supported in this browser. Please type your answer, or use Chrome or Edge.';
+        return;
+    }
+    recognition = new SpeechRec();
+    recognition.lang = 'en-PH';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = function(event) {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+            const text = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+                addToAnswer(text.trim());
+                showCaption(text.trim());
+            } else {
+                interim += text;
+            }
+        }
+        if (interim) showCaption(interim);
+    };
+
+    recognition.onerror = function(event) {
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            stopListening();
+            status.innerText = 'The microphone is blocked. Allow it in the address bar, or type your answer.';
+        } else if (event.error === 'network') {
+            stopListening();
+            status.innerText = 'Speech needs an internet connection. You can type your answer instead.';
+        }
+    };
+
+    // Chrome stops by itself after a long pause, so start again while the mic is on
+    recognition.onend = function() {
+        if (listening) {
+            try { recognition.start(); } catch (e) {}
+        }
+    };
+}
+
+function startListening() {
+    if (!recognition || listening) return;
+    listening = true;
+    try { recognition.start(); } catch (e) {}
+    document.getElementById('btnMic').classList.add('listening');
+    document.getElementById('micLabel').innerText = 'Mute';
+    document.getElementById('micStatus').innerText = 'Listening... speak your answer.';
+}
+
+function stopListening() {
+    listening = false;
+    if (recognition) recognition.stop();
+    document.getElementById('btnMic').classList.remove('listening');
+    document.getElementById('micLabel').innerText = 'Speak';
+    document.getElementById('micStatus').innerText = 'Microphone is off. You can type your answer.';
+}
+
+function toggleMic() {
+    if (listening) stopListening();
+    else startListening();
+}
+
+window.onload = function() {
+    setupSpeech();
+    loadRoom();
+};
     </script>
 </body>
 </html>
