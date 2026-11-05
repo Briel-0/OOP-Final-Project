@@ -55,6 +55,13 @@
         .answer-box { width: 100%; background: #14251f; border: 1px solid #1f322d; border-radius: 8px; color: #e5efec; padding: 10px; font-size: 12px; resize: none; outline: none; }
         .mic-status { font-size: 11px; color: #8aa59d; min-height: 14px; }
         .ctrl.listening .ctrl-circle { background: #34d399; }
+
+        .feedback-box { display: none; background: #14251f; border: 1px solid #1f322d; border-radius: 10px; padding: 14px; font-size: 12px; color: #cfe3dc; }
+        .fb-summary { font-weight: 700; font-size: 13px; margin-bottom: 10px; color: #ffffff; }
+        .fb-item { display: flex; gap: 8px; margin-bottom: 8px; line-height: 1.4; }
+        .fb-mark { font-weight: 700; }
+        .fb-pass { color: #34d399; }
+        .fb-fail { color: #fbbf24; }
     </style>
 </head>
 <body>
@@ -95,8 +102,9 @@
                     <textarea class="answer-box" id="answerBox" rows="5" placeholder="Speak with the microphone, or type your answer here..."></textarea>
                     <div class="mic-status" id="micStatus"></div>
                 </div>
-                <button type="button" class="btn-feedback" id="btnFeedback">Get answer feedback</button>
+                <button type="button" class="btn-feedback" id="btnFeedback" onclick="getFeedback()">Get answer feedback</button>
                 <button type="button" class="btn-next" id="btnNext" onclick="nextQuestion()">Next question ›</button>
+                <div class="feedback-box" id="feedbackBox"></div>
             </div>
         </div>
 
@@ -141,10 +149,50 @@
         function nextQuestion() {
             if (current < questions.length - 1) {
                 current++;
-                // Each question starts with an empty answer
+                // Each question starts with an empty answer and no feedback
                 document.getElementById('answerBox').value = '';
+                document.getElementById('feedbackBox').style.display = 'none';
                 showQuestion();
-            }   
+            }
+        }
+
+        // Sends the answer to the server and shows the coach feedback
+        function getFeedback() {
+            const box = document.getElementById('feedbackBox');
+            const answer = document.getElementById('answerBox').value.trim();
+            box.style.display = 'block';
+            if (!answer) {
+                box.innerText = 'Please speak or type an answer first.';
+                return;
+            }
+            fetch('/api/practice/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ answer: answer })
+            })
+            .then(res => res.ok ? res.json() : res.text().then(t => { throw new Error(t); }))
+            .then(d => {
+                box.innerHTML = '';
+                const summary = document.createElement('div');
+                summary.className = 'fb-summary';
+                summary.innerText = d.summary;
+                box.appendChild(summary);
+                d.checks.forEach(c => {
+                    const row = document.createElement('div');
+                    row.className = 'fb-item';
+                    const mark = document.createElement('span');
+                    mark.className = 'fb-mark ' + (c.passed ? 'fb-pass' : 'fb-fail');
+                    mark.innerText = c.passed ? '✓' : '!';
+                    const msg = document.createElement('span');
+                    msg.innerText = c.message;
+                    row.appendChild(mark);
+                    row.appendChild(msg);
+                    box.appendChild(row);
+                });
+            })
+            .catch(err => {
+                box.innerText = 'Could not get feedback. ' + err.message;
+            });
         }
 
         function leaveRoom() {
