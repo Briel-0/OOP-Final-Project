@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WorkMatch - Company Dashboard</title>
+    <script src="/toast.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -122,7 +123,7 @@
                     <div class="company-badge-icon" id="sidebarCompanyIcon">--</div>
                     <div>
                         <h4 style="font-size: 13px; color: #115e59; font-weight: 700;" id="sidebarCompanyName">Loading...</h4>
-                        <p style="font-size: 10px; color: #166534;">Verified company</p>
+                        <p id="sidebarCompanyStatus" style="font-size: 10px; color: #166534;">Verified company</p>
                     </div>
                 </div>
 
@@ -182,11 +183,11 @@
                     <div class="metric-label">Active job posts</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-num">0</div>
+                    <div class="metric-num" id="totalApplicantsCount">0</div>
                     <div class="metric-label">Total applicants</div>
                 </div>
                 <div class="metric-card">
-                    <div class="metric-num">0</div>
+                    <div class="metric-num" id="interviewsScheduledCount">0</div>
                     <div class="metric-label">Interviews scheduled</div>
                 </div>
             </div>
@@ -550,7 +551,21 @@
         });
 
         function openCreateJobModal() {
-            document.getElementById('createJobModal').style.display = 'flex';
+            // Ask the server each time, so a new approval works without logging in again
+            fetch('/api/company/me')
+                .then(res => res.ok ? res.json() : null)
+                .then(d => {
+                    if (!d) return;
+                    if (d.verificationStatus === 'REJECTED') {
+                        alert('Your company was not approved.\nReason: ' + (d.rejectionReason || 'No reason given.'));
+                        return;
+                    }
+                    if (d.verificationStatus !== 'VERIFIED') {
+                        alert('Waiting for admin approval.\nYou can create job posts once an administrator verifies your company.');
+                        return;
+                    }
+                    document.getElementById('createJobModal').style.display = 'flex';
+                });
         }
 
         function closeCreateJobModal() {
@@ -1068,6 +1083,18 @@
                 .then(() => loadCompanyNotifications());
         }
 
+        // Fills the two dashboard counters from the company's applications
+        function loadCompanyCounts() {
+            fetch('/api/company/applications')
+                .then(res => res.ok ? res.json() : [])
+                .then(apps => {
+                    const list = Array.isArray(apps) ? apps : [];
+                    document.getElementById('totalApplicantsCount').innerText = list.length;
+                    document.getElementById('interviewsScheduledCount').innerText =
+                        list.filter(a => a.status === 'Interview scheduled').length;
+                });
+        }
+
         // Switches between the Dashboard and Candidates pages
         function switchView(viewName) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
@@ -1079,6 +1106,7 @@
             if (viewName === 'messages') loadChatList();
             if (viewName === 'interviews') loadInterviews();
             if (viewName === 'notifications') loadCompanyNotifications();
+            if (viewName === 'dashboard') loadCompanyCounts();
         }
 
         // Fills the Candidates table with this company's real applicants
@@ -1132,6 +1160,9 @@
                     document.getElementById('sidebarAdminName').innerText = data.companyName + ' Admin';
                     document.getElementById('sidebarAvatar').innerText = initials;
                     document.getElementById('companyMenuBtn').innerText = initials;
+                    document.getElementById('sidebarCompanyStatus').innerText =
+                        data.verificationStatus === 'VERIFIED' ? 'Verified company'
+                        : (data.verificationStatus === 'REJECTED' ? 'Not approved' : 'Waiting for approval');
                     // The job list needs the name first
                     loadCompanyJobs();
                 });
@@ -1288,6 +1319,7 @@
             loadMetaData();
             loadCompanyHeader();
             loadCompanyNotifications();
+            loadCompanyCounts();
         };
     </script>
 </body>

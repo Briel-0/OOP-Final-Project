@@ -82,7 +82,7 @@ public class CompanyController {
         return companyRepository.findById(id).orElse(null);
     }
 
-    // Tells the page which company is logged in (from the session)
+    // Tells the page which company is logged in and if it is verified (from the session)
     @GetMapping("/api/company/me")
     @ResponseBody
     public ResponseEntity<?> getCompanyInfo(HttpSession session) {
@@ -90,8 +90,14 @@ public class CompanyController {
         if (companyName == null) {
             return ResponseEntity.status(401).body("Please log in first.");
         }
+        String companyEmail = (String) session.getAttribute("companyEmail");
+        Company company = companyEmail != null ? companyRepository.findByEmail(companyEmail).orElse(null) : null;
+
         Map<String, Object> response = new HashMap<>();
         response.put("companyName", companyName);
+        response.put("verificationStatus", company != null && company.getVerificationStatus() != null
+                ? company.getVerificationStatus() : "VERIFIED");
+        response.put("rejectionReason", company != null ? company.getRejectionReason() : null);
         return ResponseEntity.ok(response);
     }
 
@@ -415,6 +421,16 @@ public class CompanyController {
             return "redirect:/login.html?registered";
         }
         return "redirect:/login.html?error=exists";
+    }
+
+    // Used when the login page sends the company form as JSON
+    @PostMapping(value = "/api/auth/company/register", consumes = "application/json")
+    @ResponseBody
+    public ResponseEntity<?> registerCompanyJson(@RequestBody CompanyDto dto) {
+        if (saveCompany(dto)) {
+            return ResponseEntity.ok().body("Registered successfully");
+        }
+        return ResponseEntity.status(409).body("Email already registered or missing");
     }
 
     private boolean saveCompany(CompanyDto dto) {

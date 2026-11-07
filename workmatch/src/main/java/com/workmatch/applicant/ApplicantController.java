@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -25,6 +28,8 @@ import com.workmatch.message.MessageRepository;
 import com.workmatch.notification.Notification;
 import com.workmatch.notification.NotificationRepository;
 import com.workmatch.notification.NotificationService;
+import com.workmatch.interview.Interview;
+import com.workmatch.interview.InterviewRepository;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -42,6 +47,9 @@ public class ApplicantController {
     
     @Autowired
     private ReminderService reminderService;
+
+    @Autowired
+    private InterviewRepository interviewRepository;
 
     public ApplicantController(JobRepository jobRepository,
                             JobApplicationRepository applicationRepository,
@@ -138,7 +146,7 @@ public class ApplicantController {
         app.setJobTitle(jobTitle);
         app.setCompany(company);
         app.setStatus("Submitted");
-        app.setAppliedOn("Oct 11, 2026");
+        app.setAppliedOn(LocalDate.now().format(DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH)));
         Application saved = applicationRepository.save(app);
 
         // Tell the company a new application came in
@@ -253,7 +261,17 @@ public class ApplicantController {
         response.put("savedJobs", 0);
         // Only unread messages that companies sent to this applicant
         response.put("unreadMessages", messageRepository.countByApplicantIdAndSenderRoleAndIsReadFalse(applicantId, "COMPANY"));
-        response.put("upcomingInterviews", 0);
+        // Confirmed interviews that have not ended yet
+        int upcoming = 0;
+        for (Application ap : applicationRepository.findByApplicantId(applicantId)) {
+            if (!"Interview scheduled".equals(ap.getStatus())) continue;
+            Interview iv = interviewRepository.findFirstByApplicationId(ap.getId()).orElse(null);
+            if (iv != null && iv.getScheduledAt() != null
+                    && iv.getScheduledAt().plusMinutes(iv.getDurationMinutes()).isAfter(LocalDateTime.now())) {
+                upcoming++;
+            }
+        }
+        response.put("upcomingInterviews", upcoming);
         response.put("unreadNotifications", notificationRepository.countByApplicantIdAndIsReadFalse(applicantId));
         return ResponseEntity.ok(response);
     }

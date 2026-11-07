@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WorkMatch - Applicant Workspace</title>
+    <script src="/toast.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -250,7 +251,7 @@
             <div class="top-bar">
                 <a href="javascript:void(0)" style="font-size: 13px; color: #718096; text-decoration: none; font-weight: 500;">Need help?</a>
                 <span style="color: #cbd5e1;">|</span>
-                <span style="cursor: pointer; font-size: 16px;" onclick="switchView('notifications')">🔔</span>
+                <span style="position: relative; cursor: pointer; font-size: 16px;" onclick="switchView('notifications')">🔔<span id="notifDot" style="display: none; position: absolute; top: 0; right: -2px; width: 8px; height: 8px; background: #e06d53; border-radius: 50%;"></span></span>
                 
                 <div style="position: relative;">
                     <div class="avatar" id="applicantAvatarBtn" onclick="toggleUserDropdown()" style="cursor: pointer; user-select: none;">--</div>
@@ -771,6 +772,7 @@
                     document.getElementById('msgCountBadge').innerText = data.unreadMessages || 0;
                     document.getElementById('overviewInterviewCount').innerText = data.upcomingInterviews || 0;
                     document.getElementById('notifCountBadge').innerText = data.unreadNotifications || 0;
+                    document.getElementById('notifDot').style.display = (data.unreadNotifications || 0) > 0 ? 'block' : 'none';
 
                     loadProfileData();
                 });
@@ -782,6 +784,7 @@
                 .then(res => res.json())
                 .then(labels => {
                     allLabelsData = labels;
+                    if (allJobs.length > 0) runSearchFilters();
                     renderCheckboxes('SKILL', 'skillsCheckboxes');
                     renderCheckboxes('PHYSICAL_DEMAND', 'physicalCheckboxes');
                     renderCheckboxes('ACCESSIBILITY', 'accessibilityCheckboxes');
@@ -1038,7 +1041,7 @@
                                     <td><strong>${app.jobTitle}</strong></td>
                                     <td>${app.company}</td>
                                     <td><span style="background:#f3e8ff; color:#6b21a8; padding:4px 10px; border-radius:12px; font-weight:600; font-size:11px;">${app.status || 'Under review'}</span></td>
-                                    <td>${app.appliedOn || 'Oct 11, 2026'}</td>
+                                    <td>${app.appliedOn || '-'}</td>
                                 </tr>
                             `;
                         });
@@ -1188,6 +1191,18 @@
                 const hasApplied = myApplied.some(a => a.jobTitle === job.title && a.company === job.company);
                 const matchPct = job.matchPct;
 
+                // The accommodations this job really ticked (first 3 shown)
+                const offered = allLabelsData
+                    .filter(l => l.labelGroup === 'ACCESSIBILITY' && (job.labelIds || []).includes(l.id))
+                    .map(l => l.name);
+                let reqHtml = '<div class="req-item">No accommodations listed</div>';
+                if (offered.length > 0) {
+                    reqHtml = offered.slice(0, 3).map(n => `<div class="req-item"><span>✓</span> ${n}</div>`).join('');
+                    if (offered.length > 3) {
+                        reqHtml += `<div class="req-item">+ ${offered.length - 3} more</div>`;
+                    }
+                }
+
                 const actionBtn = hasApplied
                     ? `<button class="btn-applied" disabled>Applied</button>`
                     : `<button class="btn-view-match" onclick="openJobModal('${encodeURIComponent(JSON.stringify(job))}', ${matchPct}, false)">View match</button>`;
@@ -1204,9 +1219,7 @@
                             <div class="job-meta-row">
                                 <span>📍 ${job.location || 'Remote'}</span>
                             </div>
-                            <div class="requirements-box">
-                                <div class="req-item"><span>✓</span> Accessible workspace compatible</div>
-                            </div>
+                            <div class="requirements-box">${reqHtml}</div>
                         </div>
                         <div class="job-card-footer">
                             ${actionBtn}
